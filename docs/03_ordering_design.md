@@ -30,9 +30,9 @@ stateDiagram-v2
     [*] --> Pending
     Pending --> Canceled: cancel by user
     Pending --> PaymentPending: sell order found
-    PaymentPending --> PaymentSucceded
+    PaymentPending --> PaymentSucceeded
     PaymentPending --> PaymentFailed: not enough money
-    PaymentSucceded --> Approved: after money transit
+    PaymentSucceeded --> Approved: after money transit
     Approved --> [*]
     Canceled --> [*]
     PaymentFailed --> [*]
@@ -125,6 +125,7 @@ sequenceDiagram
 * виртуальный предмет (item)
   * id
   * name
+  * initial count (количество при размещении)
   * initial price (стоимость при размещении)
   * commission (комиссия за сделку)
 * заявка на продажу (sell order)
@@ -158,7 +159,7 @@ sequenceDiagram
 * аккаунт (account)
   * id (= user id)
   * amount
-* история баланса (balance history)
+* операция биллинга (operation)
   * id
   * account id
   * type
@@ -166,4 +167,5 @@ sequenceDiagram
     * withdraw
     * payment
     * accrual
-  * amount 
+  * amount
+  * description
