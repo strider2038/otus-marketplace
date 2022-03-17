@@ -35,6 +35,7 @@ func (issuer *Issuer) Issue(user *users.User) (string, error) {
 		},
 		UserID: user.ID,
 		Email:  user.Email,
+		Role:   string(user.Role),
 	})
 	token.Header["kid"] = KeyID
 

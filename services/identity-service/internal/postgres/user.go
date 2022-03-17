@@ -21,7 +21,7 @@ func NewUserRepository(db *database.Queries) *UserRepository {
 }
 
 func (repository *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (*users.User, error) {
-	u, err := repository.db.FindUser(ctx, id)
+	row, err := repository.db.FindUser(ctx, id)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, users.ErrUserNotFound
 	}
@@ -29,20 +29,11 @@ func (repository *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (*
 		return nil, fmt.Errorf("failed to find user: %w", err)
 	}
 
-	return &users.User{
-		ID:        u.ID,
-		Email:     u.Email,
-		Password:  u.Password,
-		FirstName: u.FirstName,
-		LastName:  u.LastName,
-		Phone:     u.Phone,
-		CreatedAt: u.CreatedAt,
-		UpdatedAt: u.UpdatedAt,
-	}, nil
+	return userFromRow(row), nil
 }
 
 func (repository *UserRepository) FindByEmail(ctx context.Context, email string) (*users.User, error) {
-	u, err := repository.db.FindUserByEmail(ctx, email)
+	row, err := repository.db.FindUserByEmail(ctx, email)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, users.ErrUserNotFound
 	}
@@ -50,16 +41,7 @@ func (repository *UserRepository) FindByEmail(ctx context.Context, email string)
 		return nil, fmt.Errorf("failed to find user: %w", err)
 	}
 
-	return &users.User{
-		ID:        u.ID,
-		Email:     u.Email,
-		Password:  u.Password,
-		FirstName: u.FirstName,
-		LastName:  u.LastName,
-		Phone:     u.Phone,
-		CreatedAt: u.CreatedAt,
-		UpdatedAt: u.UpdatedAt,
-	}, nil
+	return userFromRow(row), nil
 }
 
 func (repository *UserRepository) CountByEmail(ctx context.Context, email string) (int64, error) {
@@ -79,6 +61,7 @@ func (repository *UserRepository) Save(ctx context.Context, user *users.User) er
 			ID:        uuid.Must(uuid.NewV4()),
 			Email:     user.Email,
 			Password:  user.Password,
+			Role:      database.UserRole(user.Role),
 			FirstName: user.FirstName,
 			LastName:  user.LastName,
 			Phone:     user.Phone,
@@ -91,6 +74,7 @@ func (repository *UserRepository) Save(ctx context.Context, user *users.User) er
 		u, err = repository.db.UpdateUser(ctx, database.UpdateUserParams{
 			ID:        user.ID,
 			Email:     user.Email,
+			Role:      database.UserRole(user.Role),
 			FirstName: user.FirstName,
 			LastName:  user.LastName,
 			Phone:     user.Phone,
@@ -102,6 +86,7 @@ func (repository *UserRepository) Save(ctx context.Context, user *users.User) er
 
 	user.Email = u.Email
 	user.Password = u.Password
+	user.Role = users.Role(u.Role)
 	user.FirstName = u.FirstName
 	user.LastName = u.LastName
 	user.Phone = u.Phone
@@ -117,4 +102,18 @@ func (repository *UserRepository) Delete(ctx context.Context, id uuid.UUID) erro
 		return fmt.Errorf("failed to delete user: %w", err)
 	}
 	return nil
+}
+
+func userFromRow(row database.User) *users.User {
+	return &users.User{
+		ID:        row.ID,
+		Email:     row.Email,
+		Role:      users.Role(row.Role),
+		Password:  row.Password,
+		FirstName: row.FirstName,
+		LastName:  row.LastName,
+		Phone:     row.Phone,
+		CreatedAt: row.CreatedAt,
+		UpdatedAt: row.UpdatedAt,
+	}
 }

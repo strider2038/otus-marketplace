@@ -1,6 +1,10 @@
 package events
 
-import "github.com/gofrs/uuid"
+import (
+	"identity-service/internal/users"
+
+	"github.com/gofrs/uuid"
+)
 
 type UserCreated struct {
 	ID        uuid.UUID `json:"id,omitempty"`
@@ -15,10 +19,11 @@ func (u UserCreated) Name() string {
 }
 
 type UserUpdated struct {
-	ID        uuid.UUID `json:"id,omitempty"`
-	FirstName string    `json:"firstName,omitempty"`
-	LastName  string    `json:"lastName,omitempty"`
-	Phone     string    `json:"phone,omitempty"`
+	ID        uuid.UUID  `json:"id,omitempty"`
+	Role      users.Role `json:"role,omitempty"`
+	FirstName string     `json:"firstName,omitempty"`
+	LastName  string     `json:"lastName,omitempty"`
+	Phone     string     `json:"phone,omitempty"`
 }
 
 func (u UserUpdated) Name() string {

@@ -10,10 +10,19 @@ import (
 
 var ErrUserNotFound = errors.New("user not found")
 
+type Role string
+
+const (
+	TraderRole Role = "trader"
+	BrokerRole Role = "broker"
+	AdminRole  Role = "admin"
+)
+
 type User struct {
 	ID        uuid.UUID `json:"id,omitempty"`
 	Email     string    `json:"email,omitempty"`
 	Password  string    `json:"-"`
+	Role      Role      `json:"role"`
 	FirstName string    `json:"firstName,omitempty"`
 	LastName  string    `json:"lastName,omitempty"`
 	Phone     string    `json:"phone,omitempty"`

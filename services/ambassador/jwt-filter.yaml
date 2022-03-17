@@ -19,3 +19,5 @@ spec:
         value: "{{ .token.Claims.userId }}"
       - name: "X-User-Email"
         value: "{{ .token.Claims.email }}"
+      - name: "X-User-Role"
+        value: "{{ .token.Claims.role }}"

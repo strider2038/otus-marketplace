@@ -23,15 +23,16 @@ func (q *Queries) CountUsersByEmail(ctx context.Context, email string) (int64, e
 }
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO "user" (id, email, password, first_name, last_name, phone)
-VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, email, password, first_name, last_name, phone, created_at, updated_at
+INSERT INTO "user" (id, email, password, role, first_name, last_name, phone)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id, email, password, role, first_name, last_name, phone, created_at, updated_at
 `
 
 type CreateUserParams struct {
 	ID        uuid.UUID
 	Email     string
 	Password  string
+	Role      UserRole
 	FirstName string
 	LastName  string
 	Phone     string
@@ -42,6 +43,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.ID,
 		arg.Email,
 		arg.Password,
+		arg.Role,
 		arg.FirstName,
 		arg.LastName,
 		arg.Phone,
@@ -51,6 +53,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.ID,
 		&i.Email,
 		&i.Password,
+		&i.Role,
 		&i.FirstName,
 		&i.LastName,
 		&i.Phone,
@@ -72,7 +75,7 @@ func (q *Queries) DeleteUser(ctx context.Context, id uuid.UUID) error {
 }
 
 const findUser = `-- name: FindUser :one
-SELECT id, email, password, first_name, last_name, phone, created_at, updated_at
+SELECT id, email, password, role, first_name, last_name, phone, created_at, updated_at
 FROM "user"
 WHERE id = $1
 LIMIT 1
@@ -85,6 +88,7 @@ func (q *Queries) FindUser(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.ID,
 		&i.Email,
 		&i.Password,
+		&i.Role,
 		&i.FirstName,
 		&i.LastName,
 		&i.Phone,
@@ -95,7 +99,7 @@ func (q *Queries) FindUser(ctx context.Context, id uuid.UUID) (User, error) {
 }
 
 const findUserByEmail = `-- name: FindUserByEmail :one
-SELECT id, email, password, first_name, last_name, phone, created_at, updated_at
+SELECT id, email, password, role, first_name, last_name, phone, created_at, updated_at
 FROM "user"
 WHERE email = $1
 LIMIT 1
@@ -108,6 +112,7 @@ func (q *Queries) FindUserByEmail(ctx context.Context, email string) (User, erro
 		&i.ID,
 		&i.Email,
 		&i.Password,
+		&i.Role,
 		&i.FirstName,
 		&i.LastName,
 		&i.Phone,
@@ -119,14 +124,15 @@ func (q *Queries) FindUserByEmail(ctx context.Context, email string) (User, erro
 
 const updateUser = `-- name: UpdateUser :one
 UPDATE "user"
-SET email = $2, first_name = $3, last_name = $4, phone = $5, updated_at = now()
+SET email = $2, role = $3, first_name = $4, last_name = $5, phone = $6, updated_at = now()
 WHERE id = $1
-RETURNING id, email, password, first_name, last_name, phone, created_at, updated_at
+RETURNING id, email, password, role, first_name, last_name, phone, created_at, updated_at
 `
 
 type UpdateUserParams struct {
 	ID        uuid.UUID
 	Email     string
+	Role      UserRole
 	FirstName string
 	LastName  string
 	Phone     string
@@ -136,6 +142,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 	row := q.db.QueryRow(ctx, updateUser,
 		arg.ID,
 		arg.Email,
+		arg.Role,
 		arg.FirstName,
 		arg.LastName,
 		arg.Phone,
@@ -145,6 +152,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.ID,
 		&i.Email,
 		&i.Password,
+		&i.Role,
 		&i.FirstName,
 		&i.LastName,
 		&i.Phone,

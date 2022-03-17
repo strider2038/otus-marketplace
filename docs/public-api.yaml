@@ -411,8 +411,9 @@ components:
           type: string
           writeOnly: true
           enum:
-            - user
+            - trader
             - broker
+            - admin
         firstName:
           type: string
         lastName:

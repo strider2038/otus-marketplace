@@ -3,15 +3,37 @@
 package database
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/gofrs/uuid"
 )
 
+type UserRole string
+
+const (
+	UserRoleTrader UserRole = "trader"
+	UserRoleBroker UserRole = "broker"
+	UserRoleAdmin  UserRole = "admin"
+)
+
+func (e *UserRole) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = UserRole(s)
+	case string:
+		*e = UserRole(s)
+	default:
+		return fmt.Errorf("unsupported scan type for UserRole: %T", src)
+	}
+	return nil
+}
+
 type User struct {
 	ID        uuid.UUID
 	Email     string
 	Password  string
+	Role      UserRole
 	FirstName string
 	LastName  string
 	Phone     string
