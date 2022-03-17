@@ -19,6 +19,8 @@ CREATE TABLE "operation"
     description text           not null,
     created_at  timestamp      not null default now()
 );
+
+INSERT INTO "account" (id) VALUES ('2a104e66-1c78-4577-ab15-3ae935180c17');
 -- +goose StatementEnd
 
 -- +goose Down

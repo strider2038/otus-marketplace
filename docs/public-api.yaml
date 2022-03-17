@@ -554,6 +554,7 @@ components:
             - withdraw
             - payment
             - accrual
+            - commission
           readOnly: true
         description:
           type: string

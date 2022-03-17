@@ -10,10 +10,11 @@ import (
 type OperationType string
 
 const (
-	DepositOperation  OperationType = "deposit"
-	WithdrawOperation OperationType = "withdraw"
-	PaymentOperation  OperationType = "payment"
-	AccrualOperation  OperationType = "accrual"
+	DepositOperation    OperationType = "deposit"
+	WithdrawOperation   OperationType = "withdraw"
+	PaymentOperation    OperationType = "payment"
+	AccrualOperation    OperationType = "accrual"
+	CommissionOperation OperationType = "commission"
 )
 
 type Operation struct {
@@ -39,6 +40,10 @@ func NewPayment(id, accountID uuid.UUID, amount float64, description string) *Op
 
 func NewAccrual(id, accountID uuid.UUID, amount float64, description string) *Operation {
 	return newOperation(id, accountID, AccrualOperation, amount, description)
+}
+
+func NewCommission(accountID uuid.UUID, amount float64, description string) *Operation {
+	return newOperation(uuid.Must(uuid.NewV4()), accountID, CommissionOperation, amount, description)
 }
 
 type OperationRepository interface {

@@ -30,18 +30,19 @@ func main() {
 		log.Fatal("failed to connect to postgres:", err)
 	}
 	connection := pgx.NewPool(pool)
-	router, err := di.NewAPIRouter(connection, config)
+	container, err := di.NewContainer(connection, config)
 	if err != nil {
-		log.Fatal("failed to create router: ", err)
+		log.Fatal("failed to create di container: ", err)
 	}
+	router := di.NewAPIRouter(container)
 
 	address := fmt.Sprintf(":%d", config.Port)
 	log.Println("starting application server at", address)
 
 	group := ossync.NewGroup(context.Background())
 	group.Go(httpserver.New(address, router).ListenAndServe)
-	group.Go(di.NewIdentityConsumer(connection, config).Run)
-	group.Go(di.NewBillingConsumer(connection, config).Run)
+	group.Go(di.NewIdentityConsumer(container).Run)
+	group.Go(di.NewBillingConsumer(container).Run)
 	err = group.Wait()
 	if err != nil {
 		log.Fatalln(err)

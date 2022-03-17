@@ -27,14 +27,7 @@ func (repository *OperationRepository) FindByAccount(ctx context.Context, accoun
 
 	operations := make([]*billing.Operation, len(rows))
 	for i, row := range rows {
-		operations[i] = &billing.Operation{
-			ID:          row.ID,
-			AccountID:   row.AccountID,
-			Type:        billing.OperationType(row.Type),
-			Amount:      row.Amount,
-			Description: row.Description,
-			CreatedAt:   row.CreatedAt,
-		}
+		operations[i] = operationFromRow(row)
 	}
 
 	return operations, nil
@@ -53,4 +46,15 @@ func (repository *OperationRepository) Add(ctx context.Context, operation *billi
 	}
 
 	return nil
+}
+
+func operationFromRow(row database.Operation) *billing.Operation {
+	return &billing.Operation{
+		ID:          row.ID,
+		AccountID:   row.AccountID,
+		Type:        billing.OperationType(row.Type),
+		Amount:      row.Amount,
+		Description: row.Description,
+		CreatedAt:   row.CreatedAt,
+	}
 }

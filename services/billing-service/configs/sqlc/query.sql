@@ -23,7 +23,7 @@ WHERE id = $1
 RETURNING id, amount, created_at, updated_at;
 
 -- name: FindOperationsByAccount :many
-SELECT id, account_id, amount, "type", description, created_at
+SELECT id, account_id, "type", amount, description, created_at
 FROM "operation"
 WHERE account_id = $1
 ORDER BY created_at DESC;
@@ -31,4 +31,4 @@ ORDER BY created_at DESC;
 -- name: CreateOperation :one
 INSERT INTO "operation" (id, account_id, amount, "type", description)
 VALUES ($1, $2, $3, $4, $5)
-RETURNING id, account_id, amount, "type", description, created_at;
+RETURNING id, account_id, "type", amount, description, created_at;

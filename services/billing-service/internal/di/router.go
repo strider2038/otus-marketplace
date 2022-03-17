@@ -6,31 +6,27 @@ import (
 	"net/http"
 
 	"billing-service/internal/api"
-	"billing-service/internal/postgres"
 
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/strider2038/pkg/persistence/pgx"
 )
 
-func NewAPIRouter(connection pgx.Connection, config Config) (http.Handler, error) {
-	accountRepository := postgres.NewAccountRepository(connection)
-	operationRepository := postgres.NewOperationRepository(connection)
-	txManager := pgx.NewTransactionManager(connection)
-	billingApiService := api.NewBillingApiService(accountRepository, operationRepository, txManager)
-	billingApiController := api.NewBillingApiController(billingApiService)
+func NewAPIRouter(c *Container) http.Handler {
+	apiService := api.NewBillingApiService(c.accountRepository, c.operationRepository, c.txManager)
+	apiController := api.NewBillingApiController(apiService)
 
-	apiRouter := api.NewRouter(billingApiController)
+	apiRouter := api.NewRouter(apiController)
 	metrics := api.NewMetrics("billing_service")
 	apiRouter.Use(func(handler http.Handler) http.Handler {
 		return api.MetricsMiddleware(handler, metrics)
 	})
 
-	router := NewRouter(connection, config)
+	router := NewRouter(c.connection, c.config)
 	router.PathPrefix("/api").Handler(apiRouter)
 	router.Handle("/metrics", promhttp.Handler())
 
-	return router, nil
+	return router
 }
 
 func NewRouter(connection pgx.Connection, config Config) *mux.Router {

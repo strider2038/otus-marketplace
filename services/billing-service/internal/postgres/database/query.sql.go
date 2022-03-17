@@ -5,7 +5,6 @@ package database
 
 import (
 	"context"
-	"time"
 
 	"github.com/gofrs/uuid"
 )
@@ -31,7 +30,7 @@ func (q *Queries) CreateAccount(ctx context.Context, id uuid.UUID) (Account, err
 const createOperation = `-- name: CreateOperation :one
 INSERT INTO "operation" (id, account_id, amount, "type", description)
 VALUES ($1, $2, $3, $4, $5)
-RETURNING id, account_id, amount, "type", description, created_at
+RETURNING id, account_id, "type", amount, description, created_at
 `
 
 type CreateOperationParams struct {
@@ -42,16 +41,7 @@ type CreateOperationParams struct {
 	Description string
 }
 
-type CreateOperationRow struct {
-	ID          uuid.UUID
-	AccountID   uuid.UUID
-	Amount      float64
-	Type        OperationType
-	Description string
-	CreatedAt   time.Time
-}
-
-func (q *Queries) CreateOperation(ctx context.Context, arg CreateOperationParams) (CreateOperationRow, error) {
+func (q *Queries) CreateOperation(ctx context.Context, arg CreateOperationParams) (Operation, error) {
 	row := q.db.QueryRow(ctx, createOperation,
 		arg.ID,
 		arg.AccountID,
@@ -59,12 +49,12 @@ func (q *Queries) CreateOperation(ctx context.Context, arg CreateOperationParams
 		arg.Type,
 		arg.Description,
 	)
-	var i CreateOperationRow
+	var i Operation
 	err := row.Scan(
 		&i.ID,
 		&i.AccountID,
-		&i.Amount,
 		&i.Type,
+		&i.Amount,
 		&i.Description,
 		&i.CreatedAt,
 	)
@@ -111,35 +101,26 @@ func (q *Queries) FindAccountForUpdate(ctx context.Context, id uuid.UUID) (Accou
 }
 
 const findOperationsByAccount = `-- name: FindOperationsByAccount :many
-SELECT id, account_id, amount, "type", description, created_at
+SELECT id, account_id, "type", amount, description, created_at
 FROM "operation"
 WHERE account_id = $1
 ORDER BY created_at DESC
 `
 
-type FindOperationsByAccountRow struct {
-	ID          uuid.UUID
-	AccountID   uuid.UUID
-	Amount      float64
-	Type        OperationType
-	Description string
-	CreatedAt   time.Time
-}
-
-func (q *Queries) FindOperationsByAccount(ctx context.Context, accountID uuid.UUID) ([]FindOperationsByAccountRow, error) {
+func (q *Queries) FindOperationsByAccount(ctx context.Context, accountID uuid.UUID) ([]Operation, error) {
 	rows, err := q.db.Query(ctx, findOperationsByAccount, accountID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []FindOperationsByAccountRow
+	var items []Operation
 	for rows.Next() {
-		var i FindOperationsByAccountRow
+		var i Operation
 		if err := rows.Scan(
 			&i.ID,
 			&i.AccountID,
-			&i.Amount,
 			&i.Type,
+			&i.Amount,
 			&i.Description,
 			&i.CreatedAt,
 		); err != nil {

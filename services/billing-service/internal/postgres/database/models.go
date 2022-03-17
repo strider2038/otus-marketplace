@@ -12,10 +12,11 @@ import (
 type OperationType string
 
 const (
-	OperationTypeDeposit  OperationType = "deposit"
-	OperationTypeWithdraw OperationType = "withdraw"
-	OperationTypePayment  OperationType = "payment"
-	OperationTypeAccrual  OperationType = "accrual"
+	OperationTypeDeposit    OperationType = "deposit"
+	OperationTypeWithdraw   OperationType = "withdraw"
+	OperationTypePayment    OperationType = "payment"
+	OperationTypeAccrual    OperationType = "accrual"
+	OperationTypeCommission OperationType = "commission"
 )
 
 func (e *OperationType) Scan(src interface{}) error {
