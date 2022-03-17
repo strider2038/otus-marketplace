@@ -1,0 +1,11 @@
+apiVersion: getambassador.io/v2
+kind: Host
+metadata:
+  name: arch-homework
+spec:
+  hostname: arch.homework
+  acmeProvider:
+    authority: none
+  requestPolicy:
+    insecure:
+      action: Route

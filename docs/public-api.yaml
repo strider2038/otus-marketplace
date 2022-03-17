@@ -449,6 +449,10 @@ components:
         price:
           type: number
           minimum: 1
+        commission:
+          type: number
+          minimum: 1
+          readOnly: true
         status:
           type: string
           readOnly: true
@@ -481,6 +485,10 @@ components:
         price:
           type: number
           minimum: 1
+        commission:
+          type: number
+          minimum: 1
+          readOnly: true
         status:
           type: string
           readOnly: true

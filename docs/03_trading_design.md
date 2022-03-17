@@ -77,14 +77,15 @@ sequenceDiagram
     Message broker-->>Billing Service: consume CreatePayment
     
     alt Deal succeded
-        Billing Service->>Message broker: publish PaymentSucceded
-        Message broker-->>Trading Service: consume PaymentSucceded
+        Billing Service->>Message broker: publish PaymentSucceeded
+        Message broker-->>Trading Service: consume PaymentSucceeded
         Trading Service->>Trading Service: update purchase order with status "payment succeded"
         Trading Service->>Trading Service: update sell order with status "accrual pending"
         Trading Service->>Message broker: publish CreateAccrual
         
         Message broker->>Billing Service: consume CreateAccrual
         Billing Service-->>Message broker: publish AccrualApproved
+        Message broker->>Trading Service: consume AccrualApproved
         
         Trading Service->>Trading Service: update purchase order with status "approved"
         Trading Service->>Trading Service: update sell order with status "approved"
@@ -127,19 +128,25 @@ sequenceDiagram
   * name
   * initial count (количество при размещении)
   * initial price (стоимость при размещении)
-  * commission (комиссия за сделку)
+  * commission percent (комиссия за сделку)
 * заявка на продажу (sell order)
   * id
   * user id (nullable)
     * null в случае первичного размещения
   * item id
-  * price - желаемая цена продажи
+  * accrual id (id начисления)
+  * deal id (id сделки)
+  * price (желаемая цена продажи)
+  * commission (комиссия за сделку)
   * status
 * заявка на покупку (purchase order)
   * id
   * user id
   * item id
-  * price - желаемая цена покупки
+  * payment id (id платежа)
+  * deal id (id сделки)
+  * commission (комиссия за сделку)
+  * price (желаемая цена покупки)
   * status
 
 ### Сущности статистики торговой площадки

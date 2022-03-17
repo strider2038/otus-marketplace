@@ -1,0 +1,134 @@
+---
+openapi: 3.0.0
+info:
+  title: Billing service
+  version: 1.0.0
+servers:
+  - url: http://example.domain/api/v1/
+    description: Example Server
+tags:
+  - name: billing
+    description: Billing service
+security:
+  - UserRequest: []
+paths:
+  /account:
+    get:
+      tags: [ billing ]
+      description: Read current user account
+      operationId: getBillingAccount
+      responses:
+        "200":
+          description: Billing account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BillingAccount'
+  /operations:
+    get:
+      tags: [ billing ]
+      description: Read current user billing operations
+      operationId: getBillingOperations
+      responses:
+        "200":
+          description: Billing operations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BillingOperation'
+  /account/deposit:
+    post:
+      tags: [ billing ]
+      description: Deposit money to user account
+      operationId: depositMoney
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BillingOperation'
+      responses:
+        "204":
+          description: Success
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /account/withdraw:
+    post:
+      tags: [ billing ]
+      description: Withdraw money from user account
+      operationId: withdrawMoney
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BillingOperation'
+      responses:
+        "204":
+          description: Success
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    UserRequest:
+      type: apiKey
+      in: header
+      name: X-User-Id
+  schemas:
+    BillingAccount:
+      type: object
+      properties:
+        amount:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          readOnly: true
+    BillingOperation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        amount:
+          type: number
+        type:
+          type: string
+          enum:
+            - deposit
+            - withdraw
+            - payment
+            - accrual
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+    Error:
+      required:
+        - code
+        - message
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string

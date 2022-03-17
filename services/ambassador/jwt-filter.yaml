@@ -1,0 +1,21 @@
+apiVersion: getambassador.io/v2
+kind: Filter
+metadata:
+  name: "jwt-filter"
+spec:
+  JWT:
+    jwksURI: "http://identity-service:8000/.well-known/jwks.json"
+    insecureTLS: true
+    renegotiateTLS: freelyAsClient
+    validAlgorithms:
+      - "RS512"
+    requireAudience: false
+    issuer: "identity-service"
+    requireIssuedAt: false
+    requireExpiresAt: false
+    requireNotBefore: false
+    injectRequestHeaders:
+      - name: "X-User-Id"
+        value: "{{ .token.Claims.userId }}"
+      - name: "X-User-Email"
+        value: "{{ .token.Claims.email }}"

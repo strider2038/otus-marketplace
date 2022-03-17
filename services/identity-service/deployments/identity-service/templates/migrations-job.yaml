@@ -1,0 +1,21 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "identity-service.fullname" . }}-migrations
+spec:
+  ttlSecondsAfterFinished: {{ .Values.migrations.jobTTL }}
+  template:
+    metadata:
+      name: {{ include "identity-service.fullname" . }}-migrations
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrations-job
+          image: "{{ .Values.migrations.image.repository }}:{{ .Values.migrations.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.migrations.image.pullPolicy }}
+          env:
+            - name: GOOSE_DBSTRING
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "identity-service.fullname" . }}
+                  key: DATABASE_URL

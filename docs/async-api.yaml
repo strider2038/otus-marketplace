@@ -66,8 +66,8 @@ channels:
       message:
         tags:
           - name: trading
-        name: Deal created
-        title: Deal successfully created
+        name: Purchase failed
+        title: Purchase failed
         payload:
           type: object
           properties:
