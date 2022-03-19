@@ -153,6 +153,21 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /user-items:
+    get:
+      tags: [trading]
+      description: Get user trading items
+      operationId: getUserTradingItems
+      responses:
+        "200":
+          description: User trading items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserItem'
+
 components:
   securitySchemes:
     JWT:
@@ -249,6 +264,18 @@ components:
           type: string
           format: date-time
           readOnly: true
+    UserItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        count:
+          type: integer
+        onSaleCount:
+          type: integer
     Error:
       required:
         - code

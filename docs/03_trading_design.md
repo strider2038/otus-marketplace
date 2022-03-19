@@ -123,17 +123,22 @@ sequenceDiagram
 
 ### Сущности торговой площадки
 
-* виртуальный предмет (item)
+* виртуальный п`редмет (item)
   * id
   * name
   * initial count (количество при размещении)
   * initial price (стоимость при размещении)
   * commission percent (комиссия за сделку)
+* предмет портфеля (user it`em)
+  * id
+  * item id
+  * user id
+  * is on sale
 * заявка на продажу (sell order)
   * id
-  * user id (nullable)
-    * null в случае первичного размещения
+  * user id
   * item id
+  * owned item id
   * accrual id (id начисления)
   * deal id (id сделки)
   * price (желаемая цена продажи)

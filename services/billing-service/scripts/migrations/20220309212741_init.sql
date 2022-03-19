@@ -8,7 +8,7 @@ CREATE TABLE "account"
     updated_at timestamp not null default now()
 );
 
-CREATE TYPE "operation_type" AS enum('deposit', 'withdraw', 'payment', 'accrual');
+CREATE TYPE "operation_type" AS enum('deposit', 'withdraw', 'payment', 'accrual', 'commission');
 
 CREATE TABLE "operation"
 (

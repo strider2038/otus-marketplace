@@ -1,0 +1,79 @@
+POST {{host}}/api/v1/identity/register
+Content-Type: application/json
+
+{
+  "email": "john_doe_{{$randomInt}}@doe.com",
+  "password": "pa$$word",
+  "firstName": "John",
+  "lastName": "Doe"
+}
+
+> {%
+client.test("Register user", function() {
+  client.assert(response.status === 201, "Response status is not 201");
+});
+client.global.set("userId", response.body.id);
+client.global.set("userEmail", response.body.email);
+ %}
+
+###
+
+POST {{host}}/api/v1/identity/login
+Content-Type: application/json
+
+{
+  "email": "{{userEmail}}",
+  "password": "pa$$word"
+}
+
+> {%
+client.test("Login with valid password", function() {
+  client.assert(response.status === 200, "Response status is not 200");
+});
+client.global.set("accessToken", response.body.accessToken);
+ %}
+
+###
+
+POST {{host}}/api/v1/identity/logout
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{}
+
+> {%
+client.test("Logout", function() {
+  client.assert(response.status === 204, "Response status is not 204");
+});
+ %}
+
+###
+
+GET {{host}}/api/v1/identity/profile
+Authorization: Bearer {{accessToken}}
+
+> {%
+client.test("Get current user profile", function() {
+  client.assert(response.status === 200, "Response status is not 200");
+});
+ %}
+
+###
+
+PUT {{host}}/api/v1/identity/profile
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "email": "{{userEmail}}",
+  "firstName": "Johnny",
+  "lastName": "Silverhand"
+}
+
+> {%
+client.test("Update current user profile", function() {
+  client.assert(response.status === 200, "Response status is not 200");
+});
+ %}
+
+###

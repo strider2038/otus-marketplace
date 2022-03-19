@@ -11,7 +11,10 @@ import (
 	"identity-service/internal/di"
 
 	"github.com/ilyakaznacheev/cleanenv"
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/log/zerologadapter"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/rs/zerolog"
 	"github.com/strider2038/httpserver"
 )
 
@@ -25,8 +28,16 @@ func main() {
 	if err != nil {
 		log.Fatal("invalid config:", err)
 	}
+	dbConfig, err := pgxpool.ParseConfig(config.DatabaseURL)
+	if err != nil {
+		log.Fatal("failed to parse postgres config:", err)
+	}
 
-	connection, err := pgxpool.Connect(context.Background(), config.DatabaseURL)
+	logger := zerolog.New(os.Stdout)
+	dbConfig.ConnConfig.Logger = zerologadapter.NewLogger(logger)
+	dbConfig.ConnConfig.LogLevel = pgx.LogLevelInfo
+
+	connection, err := pgxpool.ConnectConfig(context.Background(), dbConfig)
 	if err != nil {
 		log.Fatal("failed to connect to postgres:", err)
 	}

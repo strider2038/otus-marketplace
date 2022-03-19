@@ -1,6 +1,8 @@
 package di
 
 import (
+	"log"
+
 	"notification-service/internal/kafka"
 	"notification-service/internal/messaging"
 	"notification-service/internal/postgres"
@@ -16,9 +18,10 @@ func NewOrderConsumer(connection *pgxpool.Pool, config Config) *kafka.Consumer {
 	notifications := postgres.NewNotificationRepository(db)
 
 	reader := segmentio.NewReader(segmentio.ReaderConfig{
-		Brokers: []string{config.KafkaConsumerURL},
-		GroupID: "notification",
-		Topic:   "order-events",
+		Brokers:     []string{config.KafkaConsumerURL},
+		GroupID:     "notification",
+		Topic:       "order-events",
+		ErrorLogger: log.Default(),
 	})
 
 	consumer := kafka.NewConsumer(reader, map[string]kafka.Processor{

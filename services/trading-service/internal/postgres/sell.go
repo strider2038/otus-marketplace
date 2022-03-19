@@ -82,9 +82,10 @@ func (repository *SellOrderRepository) FindByUser(ctx context.Context, userID uu
 	return orders, nil
 }
 
-func (repository *SellOrderRepository) FindForDeal(ctx context.Context, itemID uuid.UUID, maxPrice float64) (*trading.SellOrder, error) {
+func (repository *SellOrderRepository) FindForDeal(ctx context.Context, userID, itemID uuid.UUID, maxPrice float64) (*trading.SellOrder, error) {
 	row, err := queries(ctx, repository.conn).FindSellOrderForDeal(ctx, database.FindSellOrderForDealParams{
 		ItemID: itemID,
+		UserID: userID,
 		Price:  maxPrice,
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -105,11 +106,21 @@ func (repository *SellOrderRepository) Save(ctx context.Context, order *trading.
 	return repository.update(ctx, order)
 }
 
+func (repository *SellOrderRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	err := queries(ctx, repository.conn).DeleteSellOrder(ctx, id)
+	if err != nil {
+		return errors.Wrap(err, "failed to delete sell order")
+	}
+
+	return nil
+}
+
 func (repository *SellOrderRepository) insert(ctx context.Context, order *trading.SellOrder) error {
-	_, err := queries(ctx, repository.conn).CreateSellOrder(ctx, database.CreateSellOrderParams{
+	err := queries(ctx, repository.conn).CreateSellOrder(ctx, database.CreateSellOrderParams{
 		ID:         order.ID,
 		UserID:     order.UserID,
 		ItemID:     order.ItemID,
+		UserItemID: order.UserItemID,
 		AccrualID:  order.AccrualID,
 		DealID:     order.DealID,
 		Price:      order.Price,
@@ -126,7 +137,7 @@ func (repository *SellOrderRepository) insert(ctx context.Context, order *tradin
 }
 
 func (repository *SellOrderRepository) update(ctx context.Context, order *trading.SellOrder) error {
-	_, err := queries(ctx, repository.conn).UpdateSellOrder(ctx, database.UpdateSellOrderParams{
+	err := queries(ctx, repository.conn).UpdateSellOrder(ctx, database.UpdateSellOrderParams{
 		ID:        order.ID,
 		AccrualID: order.AccrualID,
 		DealID:    order.DealID,
@@ -143,6 +154,7 @@ func sellOrderFromRow(row database.SellOrder) *trading.SellOrder {
 	return &trading.SellOrder{
 		ID:         row.ID,
 		ItemID:     row.ItemID,
+		UserItemID: row.UserItemID,
 		UserID:     row.UserID,
 		AccrualID:  row.AccrualID,
 		DealID:     row.DealID,

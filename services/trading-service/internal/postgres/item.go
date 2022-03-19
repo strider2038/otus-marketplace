@@ -47,7 +47,7 @@ func (repository *ItemRepository) FindByID(ctx context.Context, id uuid.UUID) (*
 }
 
 func (repository *ItemRepository) Add(ctx context.Context, item *trading.Item) error {
-	_, err := queries(ctx, repository.conn).AddItem(ctx, database.AddItemParams{
+	err := queries(ctx, repository.conn).AddItem(ctx, database.AddItemParams{
 		ID:                item.ID,
 		Name:              item.Name,
 		InitialCount:      item.InitialCount,

@@ -7,15 +7,17 @@ import (
 	"trading-service/internal/messaging"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 	"github.com/segmentio/kafka-go"
 )
 
 type Dispatcher struct {
 	writer *kafka.Writer
+	logger zerolog.Logger
 }
 
-func NewDispatcher(writer *kafka.Writer) *Dispatcher {
-	return &Dispatcher{writer: writer}
+func NewDispatcher(writer *kafka.Writer, logger zerolog.Logger) *Dispatcher {
+	return &Dispatcher{writer: writer, logger: logger}
 }
 
 func (d *Dispatcher) Dispatch(ctx context.Context, message messaging.Message) error {
@@ -33,6 +35,11 @@ func (d *Dispatcher) Dispatch(ctx context.Context, message messaging.Message) er
 	if err != nil {
 		return errors.Wrapf(err, `failed to dispatch message "%s"`, message.Name())
 	}
+
+	d.logger.Info().
+		Str("name", message.Name()).
+		RawJSON("body", value).
+		Msg("Message dispatched")
 
 	return nil
 }

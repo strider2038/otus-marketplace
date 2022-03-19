@@ -30,6 +30,8 @@ migrations:
       tag: "latest"
 
 secrets:
+  # Required in values.yaml.
+  brokerId: ""
   postgres:
     user: "billing_app"
     dbname: "billing_db"

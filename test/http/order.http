@@ -1,0 +1,28 @@
+GET {{host}}/api/v1/ordering/orders
+Authorization: Bearer {{accessToken}}
+
+> {%
+client.test("Get current user orders", function() {
+  client.assert(response.status === 200, "Response status is not 200");
+});
+client.global.set("ordersTag", response.headers.valueOf("etag"));
+ %}
+
+###
+
+POST {{host}}/api/v1/ordering/orders
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+If-Match: {{ordersTag}}
+
+{
+  "price": 700
+}
+
+> {%
+client.test("Create order", function() {
+  client.assert(response.status === 202, "Response status is not 202");
+});
+ %}
+
+###

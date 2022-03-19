@@ -9,10 +9,28 @@
 
 package api
 
+import (
+	"context"
+
+	"github.com/gofrs/uuid"
+	"github.com/muonsoft/validation"
+	"github.com/muonsoft/validation/it"
+)
+
 type TradingItem struct {
-	UserRole     string  `json:"-"`
-	Name         string  `json:"name,omitempty"`
-	InitialCount int32   `json:"initialCount,omitempty"`
-	InitialPrice float64 `json:"initialPrice,omitempty"`
-	Commission   float64 `json:"commission,omitempty"`
+	UserID            uuid.UUID `json:"-"`
+	UserRole          string    `json:"-"`
+	Name              string    `json:"name,omitempty"`
+	InitialCount      int32     `json:"initialCount,omitempty"`
+	InitialPrice      float64   `json:"initialPrice,omitempty"`
+	CommissionPercent float64   `json:"commissionPercent,omitempty"`
+}
+
+func (item TradingItem) Validate(ctx context.Context, validator *validation.Validator) error {
+	return validator.Validate(ctx,
+		validation.StringProperty("name", item.Name, it.IsNotBlank(), it.HasMaxLength(200)),
+		validation.NumberProperty("initialCount", item.InitialCount, it.IsBetweenIntegers(1, 10000)),
+		validation.NumberProperty("initialPrice", item.InitialPrice, it.IsBetweenFloats(10.0, 10000.0)),
+		validation.NumberProperty("commissionPercent", item.CommissionPercent, it.IsBetweenFloats(0.1, 30.0)),
+	)
 }

@@ -54,7 +54,7 @@ func (repository *SellOrderRepository) FindByUser(ctx context.Context, userID uu
 	orders := make([]*trading.SellOrder, 0)
 
 	for _, order := range repository.orders {
-		if order.UserID.UUID == userID {
+		if order.UserID == userID {
 			orders = append(orders, order)
 		}
 	}
@@ -62,12 +62,13 @@ func (repository *SellOrderRepository) FindByUser(ctx context.Context, userID uu
 	return orders, nil
 }
 
-func (repository *SellOrderRepository) FindForDeal(ctx context.Context, itemID uuid.UUID, maxPrice float64) (*trading.SellOrder, error) {
+func (repository *SellOrderRepository) FindForDeal(ctx context.Context, userID, itemID uuid.UUID, maxPrice float64) (*trading.SellOrder, error) {
 	var bestOrder *trading.SellOrder
 	var bestPrice float64
 
 	for _, order := range repository.orders {
 		if order.ItemID == itemID &&
+			order.UserID != userID &&
 			order.TotalPrice() > bestPrice &&
 			order.TotalPrice() <= maxPrice &&
 			order.Status == trading.SellPending {
@@ -84,6 +85,12 @@ func (repository *SellOrderRepository) FindForDeal(ctx context.Context, itemID u
 
 func (repository *SellOrderRepository) Save(ctx context.Context, order *trading.SellOrder) error {
 	repository.orders[order.ID] = order
+
+	return nil
+}
+
+func (repository *SellOrderRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	delete(repository.orders, id)
 
 	return nil
 }

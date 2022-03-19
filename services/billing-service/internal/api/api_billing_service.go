@@ -16,6 +16,7 @@ import (
 	"billing-service/internal/billing"
 
 	"github.com/gofrs/uuid"
+	"github.com/muonsoft/validation"
 	"github.com/pkg/errors"
 	"github.com/strider2038/pkg/persistence"
 )
@@ -27,6 +28,7 @@ type BillingApiService struct {
 	accounts           billing.AccountRepository
 	operations         billing.OperationRepository
 	transactionManager persistence.TransactionManager
+	validator          *validation.Validator
 }
 
 // NewBillingApiService creates a default api service
@@ -34,11 +36,13 @@ func NewBillingApiService(
 	accounts billing.AccountRepository,
 	operations billing.OperationRepository,
 	transactionManager persistence.TransactionManager,
+	validator *validation.Validator,
 ) BillingApiServicer {
 	return &BillingApiService{
 		accounts:           accounts,
 		operations:         operations,
 		transactionManager: transactionManager,
+		validator:          validator,
 	}
 }
 
@@ -54,7 +58,16 @@ func (s *BillingApiService) GetBillingAccount(ctx context.Context, id uuid.UUID)
 
 // DepositMoney -
 func (s *BillingApiService) DepositMoney(ctx context.Context, operation BillingOperation) (ImplResponse, error) {
-	err := s.transactionManager.DoTransactionally(ctx, func(ctx context.Context) error {
+	if operation.AccountID.IsNil() {
+		return newUnauthorizedResponse(), nil
+	}
+
+	err := s.validator.ValidateValidatable(ctx, operation)
+	if err != nil {
+		return newUnprocessableEntityResponse(err.Error()), nil
+	}
+
+	err = s.transactionManager.DoTransactionally(ctx, func(ctx context.Context) error {
 		account, err := s.accounts.FindByIDForUpdate(ctx, operation.AccountID)
 		if err != nil {
 			return errors.WithMessagef(err, "failed to find account %s", operation.AccountID)
@@ -65,7 +78,7 @@ func (s *BillingApiService) DepositMoney(ctx context.Context, operation BillingO
 		err = s.operations.Add(ctx, billing.NewDeposit(
 			operation.AccountID,
 			operation.Amount,
-			"Money deposit by user.",
+			"money deposit by user",
 		))
 		if err != nil {
 			return errors.WithMessagef(err, "failed to add account %s operation", operation.AccountID)
@@ -87,7 +100,16 @@ func (s *BillingApiService) DepositMoney(ctx context.Context, operation BillingO
 
 // WithdrawMoney -
 func (s *BillingApiService) WithdrawMoney(ctx context.Context, operation BillingOperation) (ImplResponse, error) {
-	err := s.transactionManager.DoTransactionally(ctx, func(ctx context.Context) error {
+	if operation.AccountID.IsNil() {
+		return newUnauthorizedResponse(), nil
+	}
+
+	err := s.validator.ValidateValidatable(ctx, operation)
+	if err != nil {
+		return newUnprocessableEntityResponse(err.Error()), nil
+	}
+
+	err = s.transactionManager.DoTransactionally(ctx, func(ctx context.Context) error {
 		account, err := s.accounts.FindByIDForUpdate(ctx, operation.AccountID)
 		if err != nil {
 			return errors.WithMessagef(err, "failed to find account %s", operation.AccountID)
@@ -101,7 +123,7 @@ func (s *BillingApiService) WithdrawMoney(ctx context.Context, operation Billing
 		err = s.operations.Add(ctx, billing.NewWithdrawal(
 			operation.AccountID,
 			operation.Amount,
-			"Money withdrawal by user.",
+			"money withdrawal by user",
 		))
 		if err != nil {
 			return errors.WithMessagef(err, "failed to add account %s operation", operation.AccountID)
@@ -129,6 +151,10 @@ func (s *BillingApiService) WithdrawMoney(ctx context.Context, operation Billing
 
 // GetBillingOperations -
 func (s *BillingApiService) GetBillingOperations(ctx context.Context, accountID uuid.UUID) (ImplResponse, error) {
+	if accountID.IsNil() {
+		return newUnauthorizedResponse(), nil
+	}
+
 	operations, err := s.operations.FindByAccount(ctx, accountID)
 	if err != nil {
 		return Response(http.StatusInternalServerError, nil), err

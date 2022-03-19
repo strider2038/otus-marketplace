@@ -38,6 +38,11 @@ spec:
               containerPort: 8000
               protocol: TCP
           env:
+            - name: BROKER_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "billing-service.fullname" . }}
+                  key: BROKER_ID
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:

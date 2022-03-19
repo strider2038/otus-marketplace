@@ -79,9 +79,23 @@ func (p *CreateAccrualProcessor) addAccrual(ctx context.Context, accrual *billin
 		return errors.WithMessagef(err, `failed to find user account by id "%s"`, accrual.AccountID)
 	}
 
-	account.Amount += accrual.Amount - commission
+	account.Amount += accrual.Amount
+	if accrual.AccountID == p.broker.ID() {
+		commission = 0
+	} else {
+		account.Amount -= commission
 
-	err = p.operations.Add(ctx, accrual)
+		err = p.broker.ChargeCommission(
+			ctx,
+			commission,
+			fmt.Sprintf("commission charge from user %s (accrual %s)", account.ID, accrual.ID),
+		)
+		if err != nil {
+			return errors.WithMessagef(err, "failed to charge commission to broker")
+		}
+	}
+
+	err = p.operations.Add(ctx, accrual.WithCommission(-commission))
 	if err != nil {
 		return errors.WithMessagef(err, `failed to add accrual "%s" for user "%s"`, accrual.ID, accrual.AccountID)
 	}
@@ -89,15 +103,6 @@ func (p *CreateAccrualProcessor) addAccrual(ctx context.Context, accrual *billin
 	err = p.accounts.Save(ctx, account)
 	if err != nil {
 		return errors.WithMessagef(err, `failed to save user account "%s"`, account.ID)
-	}
-
-	err = p.broker.ChargeCommission(
-		ctx,
-		commission,
-		fmt.Sprintf("commission charge from user %s (accrual %s)", account.ID, accrual.ID),
-	)
-	if err != nil {
-		return errors.WithMessagef(err, "failed to charge commission to broker")
 	}
 
 	err = p.dispatcher.Dispatch(ctx, AccrualApproved{

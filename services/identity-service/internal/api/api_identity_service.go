@@ -132,6 +132,7 @@ func (s *IdentityApiService) RegisterUser(ctx context.Context, form Registration
 	user := &users.User{
 		Email:     form.Email,
 		Password:  password,
+		Role:      users.TraderRole,
 		FirstName: form.FirstName,
 		LastName:  form.LastName,
 	}

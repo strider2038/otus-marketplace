@@ -64,6 +64,12 @@ Create the name of the service account to use
 {{/*
 Application secrets
 */}}
+{{- define "brokerId" }}
+{{- with .Values.secrets }}
+{{- printf "%s" .brokerId | b64enc }}
+{{- end }}
+{{- end }}
+
 {{- define "databaseUrl" }}
 {{- with .Values.secrets.postgres }}
 {{- printf "postgres://%s:%s@%s:%s/%s?%s" .user .password .host .port .dbname .sslmode | b64enc }}

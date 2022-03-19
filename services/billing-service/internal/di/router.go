@@ -13,7 +13,7 @@ import (
 )
 
 func NewAPIRouter(c *Container) http.Handler {
-	apiService := api.NewBillingApiService(c.accountRepository, c.operationRepository, c.txManager)
+	apiService := api.NewBillingApiService(c.accountRepository, c.operationRepository, c.txManager, c.validator)
 	apiController := api.NewBillingApiController(apiService)
 
 	apiRouter := api.NewRouter(apiController)

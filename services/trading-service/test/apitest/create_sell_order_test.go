@@ -60,16 +60,21 @@ func (suite *APISuite) TestCreateSellOrder_WhenItemDoesNotExist_ExpectValidation
 	})
 }
 
-func (suite *APISuite) TestCreateSellOrder_WhenItemNoSellOrderFound_ExpectPendingSellOrderCreated() {
-	suite.items.Set(
-		&trading.Item{
-			ID:                itemID,
-			Name:              "testItem",
-			InitialCount:      10,
-			InitialPrice:      100,
-			CommissionPercent: 10,
-		},
-	)
+func (suite *APISuite) TestCreateSellOrder_WhenNoPurchaseOrderFound_ExpectPendingSellOrderCreated() {
+	item := &trading.Item{
+		ID:                itemID,
+		Name:              "testItem",
+		InitialCount:      10,
+		InitialPrice:      100,
+		CommissionPercent: 10,
+	}
+	userItem := &trading.UserItem{
+		ID:     userItemID,
+		ItemID: itemID,
+		UserID: sellerID,
+	}
+	suite.items.Set(item)
+	suite.userItems.Set(userItem)
 
 	response := apitest.HandlePOST(
 		suite.T(),
@@ -79,7 +84,7 @@ func (suite *APISuite) TestCreateSellOrder_WhenItemNoSellOrderFound_ExpectPendin
 			"itemId": "31e2951a-08da-4ae6-b37b-928cf2507448",
 			"price": 100
 		}`),
-		apitest.WithHeader("X-User-Id", userID.String()),
+		apitest.WithHeader("X-User-Id", sellerID.String()),
 	)
 
 	response.IsAccepted()
@@ -100,7 +105,13 @@ func (suite *APISuite) TestCreateSellOrder_WhenInitialSellOrderFound_ExpectDealI
 		InitialPrice:      100,
 		CommissionPercent: 10,
 	}
+	userItem := &trading.UserItem{
+		ID:     userItemID,
+		ItemID: itemID,
+		UserID: sellerID,
+	}
 	suite.items.Set(item)
+	suite.userItems.Set(userItem)
 	purchaseOrder := trading.NewPurchaseOrder(purchaserID, item, 111)
 	suite.purchaseOrders.Set(
 		purchaseOrder,
@@ -133,7 +144,7 @@ func (suite *APISuite) TestCreateSellOrder_WhenInitialSellOrderFound_ExpectDealI
 		json.Node("/id").AssertString(func(t testing.TB, value string) {
 			suite.sellOrders.Assert(t, uuid.FromStringOrNil(value), func(order *trading.SellOrder) {
 				assert.Equal(t, trading.SellDealPending, order.Status)
-				assert.Equal(t, sellerID.String(), order.UserID.UUID.String())
+				assert.Equal(t, sellerID.String(), order.UserID.String())
 				assert.True(t, order.DealID.Valid)
 				assert.Equal(t, dealID, order.DealID.UUID)
 			})
@@ -148,6 +159,6 @@ func (suite *APISuite) TestCreateSellOrder_WhenInitialSellOrderFound_ExpectDealI
 		assert.Equal(t, purchaserID.String(), payment.UserID.String())
 		assert.Equal(t, 111.0, payment.Amount)
 		assert.Equal(t, 11.1, payment.Commission)
-		assert.Equal(t, `buying the item "testItem" on the marketplace`, payment.Description)
+		assert.Equal(t, `buying the item "testItem" on the marketplace (with commission 11)`, payment.Description)
 	})
 }

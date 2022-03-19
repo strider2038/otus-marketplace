@@ -273,12 +273,31 @@ paths:
       responses:
         "201":
           description: Trading item created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TradingItem'
         default:
           description: unexpected error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+
+  /trading/user-items:
+    get:
+      tags: [trading]
+      description: Get user trading items
+      operationId: getUserTradingItems
+      responses:
+        "200":
+          description: User trading items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserItem'
 
   /statistics/daily-stats:
     get:
@@ -525,6 +544,18 @@ components:
           type: string
           format: date-time
           readOnly: true
+    UserItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        count:
+          type: integer
+        onSaleCount:
+          type: integer
     BillingAccount:
       type: object
       properties:

@@ -17,6 +17,8 @@ func NewAPIRouter(c *Container) http.Handler {
 		c.purchaseOrderRepository,
 		c.sellOrderRepository,
 		c.itemRepository,
+		c.userItemRepository,
+		c.userItemRepository,
 		c.txManager,
 		c.dealer,
 		c.validator,

@@ -1,6 +1,8 @@
 package di
 
 import (
+	"log"
+
 	"notification-service/internal/kafka"
 	"notification-service/internal/messaging"
 	"notification-service/internal/postgres"
@@ -15,9 +17,10 @@ func NewIdentityConsumer(connection *pgxpool.Pool, config Config) *kafka.Consume
 	users := postgres.NewUserRepository(db)
 
 	reader := segmentio.NewReader(segmentio.ReaderConfig{
-		Brokers: []string{config.KafkaConsumerURL},
-		GroupID: "notification",
-		Topic:   "identity-events",
+		Brokers:     []string{config.KafkaConsumerURL},
+		GroupID:     "notification",
+		Topic:       "identity-events",
+		ErrorLogger: log.Default(),
 	})
 
 	consumer := kafka.NewConsumer(reader, map[string]kafka.Processor{

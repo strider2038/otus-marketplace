@@ -11,6 +11,7 @@ import (
 
 type Dealer struct {
 	items              ItemRepository
+	userItems          UserItemRepository
 	purchaseOrders     PurchaseOrderRepository
 	sellOrders         SellOrderRepository
 	transactionManager persistence.TransactionManager
@@ -20,6 +21,7 @@ type Dealer struct {
 
 func NewDealer(
 	items ItemRepository,
+	userItems UserItemRepository,
 	purchaseOrders PurchaseOrderRepository,
 	sellOrders SellOrderRepository,
 	transactionManager persistence.TransactionManager,
@@ -28,6 +30,7 @@ func NewDealer(
 ) *Dealer {
 	return &Dealer{
 		items:              items,
+		userItems:          userItems,
 		purchaseOrders:     purchaseOrders,
 		sellOrders:         sellOrders,
 		transactionManager: transactionManager,
@@ -42,10 +45,20 @@ func (dealer *Dealer) CreatePurchaseOrder(ctx context.Context, item *Item, purch
 	})
 }
 
-func (dealer *Dealer) CreateSellOrder(ctx context.Context, item *Item, sellOrder *SellOrder) error {
-	return dealer.transactionManager.DoTransactionally(ctx, func(ctx context.Context) error {
-		return dealer.createSellOrder(ctx, item, sellOrder)
+func (dealer *Dealer) CreateSellOrder(ctx context.Context, item *Item, userID uuid.UUID, price float64) (*SellOrder, error) {
+	var sellOrder *SellOrder
+	var err error
+
+	err = dealer.transactionManager.DoTransactionally(ctx, func(ctx context.Context) error {
+		sellOrder, err = dealer.createSellOrder(ctx, item, userID, price)
+
+		return err
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	return sellOrder, nil
 }
 
 func (dealer *Dealer) ApprovePayment(ctx context.Context, payment *Payment) error {
@@ -67,7 +80,7 @@ func (dealer *Dealer) ApproveAccrual(ctx context.Context, accrual *Accrual) erro
 }
 
 func (dealer *Dealer) createPurchaseOrder(ctx context.Context, item *Item, purchaseOrder *PurchaseOrder) error {
-	sellOrder, err := dealer.sellOrders.FindForDeal(ctx, purchaseOrder.ItemID, purchaseOrder.Price)
+	sellOrder, err := dealer.sellOrders.FindForDeal(ctx, purchaseOrder.UserID, purchaseOrder.ItemID, purchaseOrder.Price)
 	if errors.Is(err, ErrOrderNotFound) {
 		err = dealer.purchaseOrders.Save(ctx, purchaseOrder)
 		if err != nil {
@@ -88,26 +101,42 @@ func (dealer *Dealer) createPurchaseOrder(ctx context.Context, item *Item, purch
 	return nil
 }
 
-func (dealer *Dealer) createSellOrder(ctx context.Context, item *Item, sellOrder *SellOrder) error {
-	purchaseOrder, err := dealer.purchaseOrders.FindForDeal(ctx, sellOrder.ItemID, sellOrder.Price)
+func (dealer *Dealer) createSellOrder(ctx context.Context, item *Item, userID uuid.UUID, price float64) (*SellOrder, error) {
+	userItem, err := dealer.userItems.FindForSale(ctx, userID)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to find user item for sale")
+	}
+
+	sellOrder, err := NewSellOrder(userID, item, userItem, price)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to create sell order")
+	}
+
+	purchaseOrder, err := dealer.purchaseOrders.FindForDeal(ctx, sellOrder.UserID, sellOrder.ItemID, sellOrder.Price)
 	if errors.Is(err, ErrOrderNotFound) {
 		err = dealer.sellOrders.Save(ctx, sellOrder)
 		if err != nil {
-			return errors.WithMessagef(err, "failed to save sell order of user %s", sellOrder.UserID.UUID)
+			return nil, errors.WithMessagef(err, "failed to save sell order of user %s", sellOrder.UserID)
 		}
 
-		return nil
+		return sellOrder, nil
 	}
 	if err != nil {
-		return errors.WithMessage(err, "failed to find purchase order")
+		return nil, errors.WithMessage(err, "failed to find purchase order")
 	}
 
 	err = dealer.startDeal(ctx, purchaseOrder.Price, purchaseOrder.Commission, purchaseOrder, sellOrder, item)
 	if err != nil {
-		return errors.WithMessage(err, "failed to start deal")
+		return nil, errors.WithMessage(err, "failed to start deal")
 	}
 
-	return nil
+	userItem.IsOnSale = true
+	err = dealer.userItems.Save(ctx, userItem)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to save user item")
+	}
+
+	return sellOrder, nil
 }
 
 func (dealer *Dealer) startDeal(
@@ -122,7 +151,7 @@ func (dealer *Dealer) startDeal(
 		purchaseOrder.UserID,
 		amount,
 		commission,
-		fmt.Sprintf(`buying the item "%s" on the marketplace`, item.Name),
+		fmt.Sprintf(`buying the item "%s" on the marketplace (with commission %2.f)`, item.Name, commission),
 	)
 
 	dealID := uuid.Must(uuid.NewV4())
@@ -170,10 +199,10 @@ func (dealer *Dealer) approvePayment(ctx context.Context, payment *Payment) erro
 	}
 
 	accrual := NewAccrual(
-		sellOrder.ID,
+		sellOrder.UserID,
 		payment.Amount,
 		payment.Commission,
-		fmt.Sprintf(`selling the item "%s" on the marketplace`, item.Name),
+		fmt.Sprintf(`selling the item "%s" on the marketplace (with commission %.2f)`, item.Name, payment.Commission),
 	)
 	err = sellOrder.InitiateAccrual(accrual.ID)
 	if err != nil {
@@ -213,9 +242,14 @@ func (dealer *Dealer) declinePayment(ctx context.Context, payment *Payment, reas
 		return errors.WithMessagef(err, "failed to cancel deal for sell order %s", sellOrder.ID)
 	}
 
-	err = dealer.saveOrders(ctx, sellOrder, purchaseOrder)
+	err = dealer.sellOrders.Save(ctx, sellOrder)
 	if err != nil {
-		return err
+		return errors.WithMessagef(err, "failed to save sell order %s", sellOrder.ID)
+	}
+
+	err = dealer.purchaseOrders.Delete(ctx, purchaseOrder.ID)
+	if err != nil {
+		return errors.WithMessagef(err, "failed to delete purchase order %s", purchaseOrder.ID)
 	}
 
 	item, err := dealer.items.FindByID(ctx, purchaseOrder.ItemID)
@@ -240,6 +274,11 @@ func (dealer *Dealer) approveAccrual(ctx context.Context, accrual *Accrual) erro
 		return errors.WithMessagef(err, "failed to find sell order by accrual %s", accrual.ID)
 	}
 
+	soldItem, err := dealer.userItems.FindByIDForUpdate(ctx, sellOrder.UserItemID)
+	if err != nil {
+		return errors.WithMessagef(err, "failed to find sold item for sell order %s", sellOrder.ID)
+	}
+
 	purchaseOrder, err := dealer.purchaseOrders.FindByDealForUpdate(ctx, sellOrder.DealID.UUID)
 	if err != nil {
 		return errors.WithMessagef(err, "failed to find purchase order by deal %s", sellOrder.DealID.UUID)
@@ -254,9 +293,25 @@ func (dealer *Dealer) approveAccrual(ctx context.Context, accrual *Accrual) erro
 		return errors.WithMessagef(err, "failed to approve sell order %s", sellOrder.ID)
 	}
 
-	err = dealer.saveOrders(ctx, sellOrder, purchaseOrder)
+	err = dealer.sellOrders.Delete(ctx, sellOrder.ID)
 	if err != nil {
-		return err
+		return errors.WithMessagef(err, "failed to delete sell order %s", sellOrder.ID)
+	}
+
+	err = dealer.purchaseOrders.Delete(ctx, purchaseOrder.ID)
+	if err != nil {
+		return errors.WithMessagef(err, "failed to delete purchase order %s", purchaseOrder.ID)
+	}
+
+	err = dealer.userItems.Delete(ctx, soldItem.ID)
+	if err != nil {
+		return errors.WithMessagef(err, "failed to delete sold item %s", soldItem.ID)
+	}
+
+	purchasedItem := NewUserItem(purchaseOrder.ItemID, purchaseOrder.UserID)
+	err = dealer.userItems.Save(ctx, purchasedItem)
+	if err != nil {
+		return errors.WithMessagef(err, "failed to save purchased item %s for user %s", purchaseOrder.ItemID, purchaseOrder.UserID)
 	}
 
 	item, err := dealer.items.FindByID(ctx, purchaseOrder.ItemID)
@@ -265,7 +320,7 @@ func (dealer *Dealer) approveAccrual(ctx context.Context, accrual *Accrual) erro
 	}
 
 	err = dealer.events.Publish(ctx, DealSucceededEvent{
-		SellerID:            sellOrder.UserID.UUID,
+		SellerID:            sellOrder.UserID,
 		PurchaserID:         purchaseOrder.UserID,
 		ItemID:              item.ID,
 		ItemName:            item.Name,

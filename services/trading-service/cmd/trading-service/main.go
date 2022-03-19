@@ -4,14 +4,18 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 
 	"trading-service/internal/di"
 
 	"github.com/ilyakaznacheev/cleanenv"
+	pgx "github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/log/zerologadapter"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/rs/zerolog"
 	"github.com/strider2038/httpserver"
 	"github.com/strider2038/ossync"
-	"github.com/strider2038/pkg/persistence/pgx"
+	pgxadapter "github.com/strider2038/pkg/persistence/pgx"
 )
 
 var (
@@ -25,11 +29,20 @@ func main() {
 		log.Fatal("invalid config:", err)
 	}
 
-	pool, err := pgxpool.Connect(context.Background(), config.DatabaseURL)
+	dbConfig, err := pgxpool.ParseConfig(config.DatabaseURL)
+	if err != nil {
+		log.Fatal("failed to parse postgres config:", err)
+	}
+
+	logger := zerolog.New(os.Stdout)
+	dbConfig.ConnConfig.Logger = zerologadapter.NewLogger(logger)
+	dbConfig.ConnConfig.LogLevel = pgx.LogLevelInfo
+
+	pool, err := pgxpool.ConnectConfig(context.Background(), dbConfig)
 	if err != nil {
 		log.Fatal("failed to connect to postgres:", err)
 	}
-	connection := pgx.NewPool(pool)
+	connection := pgxadapter.NewPool(pool)
 	container, err := di.NewContainer(connection, config)
 	if err != nil {
 		log.Fatal("failed to create di container: ", err)

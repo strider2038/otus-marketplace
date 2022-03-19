@@ -12,6 +12,7 @@ metadata:
   name: {{ include "billing-service.fullname" . }}
 type: Opaque
 data:
+  BROKER_ID: {{ include "brokerId" . }}
   DATABASE_URL: {{ include "databaseUrl" . }}
   KAFKA_CONSUMER_URL: {{ include "kafkaConsumerUrl" . }}
   KAFKA_PRODUCER_URL: {{ include "kafkaProducerUrl" . }}

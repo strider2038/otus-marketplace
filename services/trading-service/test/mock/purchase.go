@@ -62,11 +62,12 @@ func (repository *PurchaseOrderRepository) FindByUser(ctx context.Context, userI
 	return orders, nil
 }
 
-func (repository *PurchaseOrderRepository) FindForDeal(ctx context.Context, itemID uuid.UUID, minPrice float64) (*trading.PurchaseOrder, error) {
+func (repository *PurchaseOrderRepository) FindForDeal(ctx context.Context, userID, itemID uuid.UUID, minPrice float64) (*trading.PurchaseOrder, error) {
 	var bestOrder *trading.PurchaseOrder
 
 	for _, order := range repository.orders {
 		if order.ItemID == itemID &&
+			order.UserID != userID &&
 			(bestOrder == nil || order.TotalPrice() < bestOrder.TotalPrice()) &&
 			order.TotalPrice() >= minPrice &&
 			order.Status == trading.PurchasePending {
@@ -82,6 +83,12 @@ func (repository *PurchaseOrderRepository) FindForDeal(ctx context.Context, item
 
 func (repository *PurchaseOrderRepository) Save(ctx context.Context, order *trading.PurchaseOrder) error {
 	repository.orders[order.ID] = order
+
+	return nil
+}
+
+func (repository *PurchaseOrderRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	delete(repository.orders, id)
 
 	return nil
 }

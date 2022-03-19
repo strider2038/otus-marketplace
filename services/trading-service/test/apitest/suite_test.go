@@ -18,6 +18,8 @@ import (
 var (
 	userID      = uuid.FromStringOrNil("970a9f0b-ad00-4f65-8d93-aaa00742b0ef")
 	itemID      = uuid.FromStringOrNil("31e2951a-08da-4ae6-b37b-928cf2507448")
+	userItemID  = uuid.FromStringOrNil("cf6f9f52-4290-45a9-9773-d3af268bedf4")
+	brokerID    = uuid.FromStringOrNil("432f843a-446a-49ad-8764-eca9d2ac64b8")
 	sellerID    = uuid.FromStringOrNil("771aea75-b73c-4fb6-b9d4-5a6a018a0d04")
 	purchaserID = uuid.FromStringOrNil("e9581c64-74c2-492f-85cd-04f5abeeabe8")
 	sellOrderID = uuid.FromStringOrNil("227ec860-64d4-477c-8fd6-b482b6dca06e")
@@ -27,6 +29,7 @@ type APISuite struct {
 	suite.Suite
 
 	items          *mock.ItemRepository
+	userItems      *mock.UserItemRepository
 	purchaseOrders *mock.PurchaseOrderRepository
 	sellOrders     *mock.SellOrderRepository
 	dispatcher     *mock.MessageDispatcher
@@ -36,6 +39,7 @@ type APISuite struct {
 
 func (suite *APISuite) SetupTest() {
 	suite.items = mock.NewItemRepository()
+	suite.userItems = mock.NewUserItemRepository()
 	suite.purchaseOrders = mock.NewPurchaseOrderRepository()
 	suite.sellOrders = mock.NewSellOrderRepository()
 	suite.dispatcher = mock.NewMessageDispatcher()
@@ -50,6 +54,7 @@ func (suite *APISuite) SetupTest() {
 	tradingAdapter := messaging.NewTradingAdapter(suite.dispatcher)
 	dealer := trading.NewDealer(
 		suite.items,
+		suite.userItems,
 		suite.purchaseOrders,
 		suite.sellOrders,
 		transactionManager,
@@ -60,6 +65,8 @@ func (suite *APISuite) SetupTest() {
 		suite.purchaseOrders,
 		suite.sellOrders,
 		suite.items,
+		suite.userItems,
+		suite.userItems,
 		transactionManager,
 		dealer,
 		validator,
@@ -70,4 +77,8 @@ func (suite *APISuite) SetupTest() {
 
 func TestAPISuite(t *testing.T) {
 	suite.Run(t, new(APISuite))
+}
+
+func (suite *APISuite) GivenInitialOrder(item *trading.Item, userItem *trading.UserItem) *trading.SellOrder {
+	return trading.NewInitialOrder(brokerID, item, userItem)
 }

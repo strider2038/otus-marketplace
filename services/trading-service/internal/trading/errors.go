@@ -11,6 +11,7 @@ var (
 	ErrItemNotFound  = errors.New("item not found")
 	ErrDenied        = errors.New("operation denied")
 	ErrCannotCancel  = errors.New("cannot cancel order")
+	ErrItemIsOnSale  = errors.New("item is on sale already")
 )
 
 type UnexpectedStatusError struct {

@@ -82,8 +82,9 @@ func (repository *PurchaseOrderRepository) FindByUser(ctx context.Context, userI
 	return orders, nil
 }
 
-func (repository *PurchaseOrderRepository) FindForDeal(ctx context.Context, itemID uuid.UUID, minPrice float64) (*trading.PurchaseOrder, error) {
+func (repository *PurchaseOrderRepository) FindForDeal(ctx context.Context, userID, itemID uuid.UUID, minPrice float64) (*trading.PurchaseOrder, error) {
 	row, err := queries(ctx, repository.conn).FindPurchaseOrderForDeal(ctx, database.FindPurchaseOrderForDealParams{
+		UserID: userID,
 		ItemID: itemID,
 		Price:  minPrice,
 	})
@@ -105,8 +106,17 @@ func (repository *PurchaseOrderRepository) Save(ctx context.Context, order *trad
 	return repository.update(ctx, order)
 }
 
+func (repository *PurchaseOrderRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	err := queries(ctx, repository.conn).DeletePurchaseOrder(ctx, id)
+	if err != nil {
+		return errors.Wrap(err, "failed to delete purchase order")
+	}
+
+	return nil
+}
+
 func (repository *PurchaseOrderRepository) insert(ctx context.Context, order *trading.PurchaseOrder) error {
-	_, err := queries(ctx, repository.conn).CreatePurchaseOrder(ctx, database.CreatePurchaseOrderParams{
+	err := queries(ctx, repository.conn).CreatePurchaseOrder(ctx, database.CreatePurchaseOrderParams{
 		ID:         order.ID,
 		UserID:     order.UserID,
 		ItemID:     order.ItemID,
@@ -126,7 +136,7 @@ func (repository *PurchaseOrderRepository) insert(ctx context.Context, order *tr
 }
 
 func (repository *PurchaseOrderRepository) update(ctx context.Context, order *trading.PurchaseOrder) error {
-	_, err := queries(ctx, repository.conn).UpdatePurchaseOrder(ctx, database.UpdatePurchaseOrderParams{
+	err := queries(ctx, repository.conn).UpdatePurchaseOrder(ctx, database.UpdatePurchaseOrderParams{
 		ID:        order.ID,
 		PaymentID: order.PaymentID,
 		DealID:    order.DealID,

@@ -78,8 +78,9 @@ type PurchaseOrder struct {
 
 type SellOrder struct {
 	ID         uuid.UUID
-	UserID     uuid.NullUUID
+	UserID     uuid.UUID
 	ItemID     uuid.UUID
+	UserItemID uuid.UUID
 	AccrualID  uuid.NullUUID
 	DealID     uuid.NullUUID
 	Price      float64
@@ -87,4 +88,13 @@ type SellOrder struct {
 	Status     SellStatus
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
+}
+
+type UserItem struct {
+	ID        uuid.UUID
+	ItemID    uuid.UUID
+	UserID    uuid.UUID
+	IsOnSale  bool
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }

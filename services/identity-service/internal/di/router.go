@@ -3,7 +3,9 @@ package di
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
+	"os"
 
 	"identity-service/internal/api"
 	"identity-service/internal/kafka"
@@ -16,6 +18,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/rs/zerolog"
 	segmentio "github.com/segmentio/kafka-go"
 )
 
@@ -25,11 +28,12 @@ func NewRouter(connection *pgxpool.Pool, config Config) (http.Handler, error) {
 	issuer := jwt.NewIssuer(config.PrivateKey, config.SessionLifeTime)
 	hasher := argon.Hasher{}
 	writer := &segmentio.Writer{
-		Addr:     segmentio.TCP(config.KafkaURL),
-		Topic:    "identity-events",
-		Balancer: &segmentio.LeastBytes{},
+		Addr:        segmentio.TCP(config.KafkaURL),
+		Topic:       "identity-events",
+		Balancer:    &segmentio.LeastBytes{},
+		ErrorLogger: log.Default(),
 	}
-	dispatcher := kafka.NewDispatcher(writer)
+	dispatcher := kafka.NewDispatcher(writer, zerolog.New(os.Stdout))
 
 	userRepository := postgres.NewUserRepository(db)
 	userApiService := api.NewIdentityApiService(userRepository, hasher, issuer, dispatcher)

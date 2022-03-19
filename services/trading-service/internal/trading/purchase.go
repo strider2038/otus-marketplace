@@ -131,6 +131,7 @@ type PurchaseOrderRepository interface {
 	FindByPaymentForUpdate(ctx context.Context, paymentID uuid.UUID) (*PurchaseOrder, error)
 	FindByDealForUpdate(ctx context.Context, dealID uuid.UUID) (*PurchaseOrder, error)
 	FindByUser(ctx context.Context, userID uuid.UUID) ([]*PurchaseOrder, error)
-	FindForDeal(ctx context.Context, itemID uuid.UUID, minPrice float64) (*PurchaseOrder, error)
+	FindForDeal(ctx context.Context, userID, itemID uuid.UUID, minPrice float64) (*PurchaseOrder, error)
 	Save(ctx context.Context, order *PurchaseOrder) error
+	Delete(ctx context.Context, id uuid.UUID) error
 }

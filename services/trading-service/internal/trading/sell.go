@@ -20,8 +20,9 @@ const (
 
 type SellOrder struct {
 	ID         uuid.UUID     `json:"id"`
-	UserID     uuid.NullUUID `json:"-"`
+	UserID     uuid.UUID     `json:"-"`
 	ItemID     uuid.UUID     `json:"itemId,omitempty"`
+	UserItemID uuid.UUID     `json:"-"`
 	AccrualID  uuid.NullUUID `json:"-"`
 	DealID     uuid.NullUUID `json:"-"`
 	Price      float64       `json:"price"`
@@ -54,7 +55,7 @@ func (order *SellOrder) InitiateDeal(dealID uuid.UUID) error {
 }
 
 func (order *SellOrder) CancelByUser(userID uuid.UUID) error {
-	if order.UserID.Valid && order.UserID.UUID != userID {
+	if order.UserID != userID {
 		return errors.WithStack(ErrDenied)
 	}
 	if order.Status != SellPending {
@@ -109,30 +110,29 @@ func (order *SellOrder) verifyStatus(status SellStatus) error {
 	return nil
 }
 
-func NewSellOrder(userID uuid.UUID, item *Item, price float64) *SellOrder {
+func NewSellOrder(userID uuid.UUID, item *Item, userItem *UserItem, price float64) (*SellOrder, error) {
+	if userItem.IsOnSale {
+		return nil, errors.WithStack(ErrItemIsOnSale)
+	}
+
+	return newSellOrder(userID, item, userItem, price), nil
+}
+
+func NewInitialOrder(userID uuid.UUID, item *Item, userItem *UserItem) *SellOrder {
+	return newSellOrder(userID, item, userItem, item.InitialPrice)
+}
+
+func newSellOrder(userID uuid.UUID, item *Item, userItem *UserItem, price float64) *SellOrder {
 	now := time.Now()
 
 	return &SellOrder{
 		isNew:      true,
 		ID:         uuid.Must(uuid.NewV4()),
-		UserID:     uuid.NullUUID{UUID: userID, Valid: true},
+		UserID:     userID,
+		UserItemID: userItem.ID,
 		ItemID:     item.ID,
 		Price:      price,
 		Commission: item.CalculateCommission(price),
-		Status:     SellPending,
-		CreatedAt:  now,
-		UpdatedAt:  now,
-	}
-}
-
-func NewInitialOrder(itemID uuid.UUID, price, commission float64) *SellOrder {
-	now := time.Now()
-
-	return &SellOrder{
-		ID:         uuid.Must(uuid.NewV4()),
-		ItemID:     itemID,
-		Price:      price,
-		Commission: commission,
 		Status:     SellPending,
 		CreatedAt:  now,
 		UpdatedAt:  now,
@@ -145,6 +145,7 @@ type SellOrderRepository interface {
 	FindByAccrualForUpdate(ctx context.Context, accrualID uuid.UUID) (*SellOrder, error)
 	FindByDealForUpdate(ctx context.Context, dealID uuid.UUID) (*SellOrder, error)
 	FindByUser(ctx context.Context, userID uuid.UUID) ([]*SellOrder, error)
-	FindForDeal(ctx context.Context, itemID uuid.UUID, maxPrice float64) (*SellOrder, error)
+	FindForDeal(ctx context.Context, userID, itemID uuid.UUID, maxPrice float64) (*SellOrder, error)
 	Save(ctx context.Context, order *SellOrder) error
+	Delete(ctx context.Context, id uuid.UUID) error
 }

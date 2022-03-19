@@ -26,13 +26,15 @@ import (
 // This service should implement the business logic for every endpoint for the TradingApi API.
 // Include any external packages or services that will be required by this service.
 type TradingApiService struct {
-	purchaseOrders     trading.PurchaseOrderRepository
-	sellOrders         trading.SellOrderRepository
-	items              trading.ItemRepository
-	transactionManager persistence.TransactionManager
-	dealer             *trading.Dealer
-	dispatcher         messaging.Dispatcher
-	validator          *validation.Validator
+	purchaseOrders      trading.PurchaseOrderRepository
+	sellOrders          trading.SellOrderRepository
+	items               trading.ItemRepository
+	userItems           trading.UserItemRepository
+	aggregatedUserItems trading.AggregatedUserItemRepository
+	transactionManager  persistence.TransactionManager
+	dealer              *trading.Dealer
+	dispatcher          messaging.Dispatcher
+	validator           *validation.Validator
 }
 
 // NewTradingApiService creates a default api service
@@ -40,23 +42,27 @@ func NewTradingApiService(
 	purchaseOrders trading.PurchaseOrderRepository,
 	sellOrders trading.SellOrderRepository,
 	items trading.ItemRepository,
+	userItems trading.UserItemRepository,
+	aggregatedUserItems trading.AggregatedUserItemRepository,
 	transactionManager persistence.TransactionManager,
 	dealer *trading.Dealer,
 	validator *validation.Validator,
 ) TradingApiServicer {
 	return &TradingApiService{
-		purchaseOrders:     purchaseOrders,
-		sellOrders:         sellOrders,
-		items:              items,
-		transactionManager: transactionManager,
-		dealer:             dealer,
-		validator:          validator,
+		purchaseOrders:      purchaseOrders,
+		sellOrders:          sellOrders,
+		items:               items,
+		userItems:           userItems,
+		aggregatedUserItems: aggregatedUserItems,
+		transactionManager:  transactionManager,
+		dealer:              dealer,
+		validator:           validator,
 	}
 }
 
 // CreatePurchaseOrder -
 func (s *TradingApiService) CreatePurchaseOrder(ctx context.Context, form PurchaseOrder) (ImplResponse, error) {
-	if form.UserID == uuid.Nil {
+	if form.UserID.IsNil() {
 		return newUnauthorizedResponse(), nil
 	}
 	err := s.validator.ValidateValidatable(ctx, form)
@@ -73,9 +79,7 @@ func (s *TradingApiService) CreatePurchaseOrder(ctx context.Context, form Purcha
 	}
 
 	order := trading.NewPurchaseOrder(form.UserID, item, form.Price)
-	err = s.transactionManager.DoTransactionally(ctx, func(ctx context.Context) error {
-		return s.dealer.CreatePurchaseOrder(ctx, item, order)
-	})
+	err = s.dealer.CreatePurchaseOrder(ctx, item, order)
 	if err != nil {
 		return Response(http.StatusInternalServerError, nil), err
 	}
@@ -85,7 +89,7 @@ func (s *TradingApiService) CreatePurchaseOrder(ctx context.Context, form Purcha
 
 // CancelPurchaseOrder -
 func (s *TradingApiService) CancelPurchaseOrder(ctx context.Context, userID, orderID uuid.UUID) (ImplResponse, error) {
-	if userID == uuid.Nil {
+	if userID.IsNil() {
 		return newUnauthorizedResponse(), nil
 	}
 	var order *trading.PurchaseOrder
@@ -102,9 +106,9 @@ func (s *TradingApiService) CancelPurchaseOrder(ctx context.Context, userID, ord
 			return errors.WithMessage(err, "failed to cancel purchase order")
 		}
 
-		err = s.purchaseOrders.Save(ctx, order)
+		err = s.purchaseOrders.Delete(ctx, order.ID)
 		if err != nil {
-			return errors.WithMessage(err, "failed to save purchase order")
+			return errors.WithMessage(err, "failed to delete purchase order")
 		}
 
 		return nil
@@ -127,7 +131,7 @@ func (s *TradingApiService) CancelPurchaseOrder(ctx context.Context, userID, ord
 
 // CreateSellOrder -
 func (s *TradingApiService) CreateSellOrder(ctx context.Context, form SellOrder) (ImplResponse, error) {
-	if form.UserID == uuid.Nil {
+	if form.UserID.IsNil() {
 		return newUnauthorizedResponse(), nil
 	}
 	err := s.validator.ValidateValidatable(ctx, form)
@@ -143,20 +147,20 @@ func (s *TradingApiService) CreateSellOrder(ctx context.Context, form SellOrder)
 		return Response(http.StatusInternalServerError, nil), err
 	}
 
-	order := trading.NewSellOrder(form.UserID, item, form.Price)
-	err = s.transactionManager.DoTransactionally(ctx, func(ctx context.Context) error {
-		return s.dealer.CreateSellOrder(ctx, item, order)
-	})
+	sellOrder, err := s.dealer.CreateSellOrder(ctx, item, form.UserID, form.Price)
+	if errors.Is(err, trading.ErrItemNotFound) {
+		return newUnprocessableEntityResponse("no trading items for sale"), nil
+	}
 	if err != nil {
 		return Response(http.StatusInternalServerError, nil), err
 	}
 
-	return Response(http.StatusAccepted, order), nil
+	return Response(http.StatusAccepted, sellOrder), nil
 }
 
 // CancelSellOrder -
 func (s *TradingApiService) CancelSellOrder(ctx context.Context, userID, orderID uuid.UUID) (ImplResponse, error) {
-	if userID == uuid.Nil {
+	if userID.IsNil() {
 		return newUnauthorizedResponse(), nil
 	}
 	var order *trading.SellOrder
@@ -170,12 +174,12 @@ func (s *TradingApiService) CancelSellOrder(ctx context.Context, userID, orderID
 
 		err = order.CancelByUser(userID)
 		if err != nil {
-			return errors.WithMessage(err, "failed to cancel purchase order")
+			return errors.WithMessage(err, "failed to cancel sell order")
 		}
 
-		err = s.sellOrders.Save(ctx, order)
+		err = s.sellOrders.Delete(ctx, order.ID)
 		if err != nil {
-			return errors.WithMessage(err, "failed to save purchase order")
+			return errors.WithMessage(err, "failed to delete sell order")
 		}
 
 		return nil
@@ -198,7 +202,7 @@ func (s *TradingApiService) CancelSellOrder(ctx context.Context, userID, orderID
 
 // GetPurchaseOrders -
 func (s *TradingApiService) GetPurchaseOrders(ctx context.Context, userID uuid.UUID) (ImplResponse, error) {
-	if userID == uuid.Nil {
+	if userID.IsNil() {
 		return newUnauthorizedResponse(), nil
 	}
 
@@ -212,7 +216,7 @@ func (s *TradingApiService) GetPurchaseOrders(ctx context.Context, userID uuid.U
 
 // GetSellOrders -
 func (s *TradingApiService) GetSellOrders(ctx context.Context, userID uuid.UUID) (ImplResponse, error) {
-	if userID == uuid.Nil {
+	if userID.IsNil() {
 		return newUnauthorizedResponse(), nil
 	}
 
@@ -236,20 +240,34 @@ func (s *TradingApiService) GetTradingItems(ctx context.Context) (ImplResponse, 
 
 // CreateTradingItem -
 func (s *TradingApiService) CreateTradingItem(ctx context.Context, form TradingItem) (ImplResponse, error) {
+	if form.UserID.IsNil() {
+		return newUnauthorizedResponse(), nil
+	}
 	if form.UserRole != "broker" {
 		return newForbiddenResponse(), nil
 	}
 
-	err := s.transactionManager.DoTransactionally(ctx, func(ctx context.Context) error {
-		item := trading.NewItem(form.Name, form.InitialCount, form.InitialPrice, form.Commission)
+	err := s.validator.ValidateValidatable(ctx, form)
+	if err != nil {
+		return newUnprocessableEntityResponse(err.Error()), nil
+	}
+
+	item := trading.NewItem(form.Name, form.InitialCount, form.InitialPrice, form.CommissionPercent)
+	err = s.transactionManager.DoTransactionally(ctx, func(ctx context.Context) error {
 		err := s.items.Add(ctx, item)
 		if err != nil {
 			return errors.WithMessagef(err, `failed to add item "%s"`, item.Name)
 		}
 
 		for i := 0; i < int(item.InitialCount); i++ {
-			order := trading.NewInitialOrder(item.ID, item.InitialPrice, item.CalculateCommission(item.InitialPrice))
-			err = s.sellOrders.Save(ctx, order)
+			userItem := trading.NewUserItem(item.ID, form.UserID)
+			userItem.IsOnSale = true
+			err = s.userItems.Save(ctx, userItem)
+			if err != nil {
+				return errors.WithMessagef(err, `failed to save user item "%s"`, item.Name)
+			}
+
+			err = s.sellOrders.Save(ctx, trading.NewInitialOrder(form.UserID, item, userItem))
 			if err != nil {
 				return errors.WithMessage(err, "failed to save initial order")
 			}
@@ -261,5 +279,18 @@ func (s *TradingApiService) CreateTradingItem(ctx context.Context, form TradingI
 		return Response(http.StatusInternalServerError, nil), err
 	}
 
-	return Response(http.StatusNoContent, nil), nil
+	return Response(http.StatusCreated, item), nil
+}
+
+func (s *TradingApiService) GetUserItems(ctx context.Context, userID uuid.UUID) (ImplResponse, error) {
+	if userID.IsNil() {
+		return newUnauthorizedResponse(), nil
+	}
+
+	items, err := s.aggregatedUserItems.FindByUser(ctx, userID)
+	if err != nil {
+		return Response(http.StatusInternalServerError, nil), err
+	}
+
+	return Response(http.StatusOK, items), nil
 }

@@ -1,0 +1,27 @@
+replicaCount: 2
+
+migrations:
+  version: "20220318194311"
+
+postgresql:
+  postgresqlPassword: "pa$$word"
+  persistence:
+    size: 1Gi
+
+redis:
+  auth:
+    enabled: false
+  replica:
+    replicaCount: 1
+
+secrets:
+  postgres:
+    password: "pa$$word"
+    host: "trading-service-postgresql.otus.svc.cluster.local"
+  kafka:
+    consumer:
+      url: "kafka.otus.svc.cluster.local:9092"
+    producer:
+      url: "kafka-0.kafka-headless.otus.svc.cluster.local:9092"
+#  redis:
+#    url: "trading-service-redis-master.otus.svc.cluster.local:6379"

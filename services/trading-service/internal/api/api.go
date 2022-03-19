@@ -28,6 +28,7 @@ type TradingApiRouter interface {
 	GetPurchaseOrders(http.ResponseWriter, *http.Request)
 	GetSellOrders(http.ResponseWriter, *http.Request)
 	GetTradingItems(http.ResponseWriter, *http.Request)
+	GetUserItems(http.ResponseWriter, *http.Request)
 }
 
 // TradingApiServicer defines the api actions for the TradingApi service
@@ -43,4 +44,5 @@ type TradingApiServicer interface {
 	GetPurchaseOrders(context.Context, uuid.UUID) (ImplResponse, error)
 	GetSellOrders(context.Context, uuid.UUID) (ImplResponse, error)
 	GetTradingItems(context.Context) (ImplResponse, error)
+	GetUserItems(context.Context, uuid.UUID) (ImplResponse, error)
 }

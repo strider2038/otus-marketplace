@@ -17,6 +17,10 @@ func NewBrokerAccount(brokerID uuid.UUID, accounts AccountRepository, operations
 	return &BrokerAccount{brokerID: brokerID, accounts: accounts, operations: operations}
 }
 
+func (broker *BrokerAccount) ID() uuid.UUID {
+	return broker.brokerID
+}
+
 func (broker *BrokerAccount) ChargeCommission(ctx context.Context, commission float64, comment string) error {
 	account, err := broker.accounts.FindByIDForUpdate(ctx, broker.brokerID)
 	if err != nil {

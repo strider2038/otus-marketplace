@@ -105,7 +105,7 @@ func (p *CreatePaymentProcessor) addPayment(ctx context.Context, payment *billin
 		return nil
 	}
 
-	err = p.operations.Add(ctx, payment)
+	err = p.operations.Add(ctx, payment.WithCommission(commission))
 	if err != nil {
 		return errors.WithMessagef(err, `failed to add payment "%s" for user "%s"`, payment.ID, payment.AccountID)
 	}

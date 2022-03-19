@@ -26,6 +26,17 @@ type Operation struct {
 	CreatedAt   time.Time     `json:"createdAt"`
 }
 
+func (op *Operation) WithCommission(commission float64) *Operation {
+	return &Operation{
+		ID:          op.ID,
+		AccountID:   op.AccountID,
+		Type:        op.Type,
+		Amount:      op.Amount + commission,
+		Description: op.Description,
+		CreatedAt:   op.CreatedAt,
+	}
+}
+
 func NewDeposit(accountID uuid.UUID, amount float64, description string) *Operation {
 	return newOperation(uuid.Must(uuid.NewV4()), accountID, DepositOperation, amount, description)
 }

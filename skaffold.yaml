@@ -31,6 +31,18 @@ build:
       docker:
         dockerfile: build/package/migrations/Dockerfile
 
+    ### Trading service
+    - image: strider2038/otus-marketplace-trading-service
+      context: services/trading-service
+      docker:
+        dockerfile: build/package/trading-service/Dockerfile
+        buildArgs:
+          APP_VERSION: local
+    - image: strider2038/otus-marketplace-trading-migrations
+      context: services/trading-service
+      docker:
+        dockerfile: build/package/migrations/Dockerfile
+
     ### Notification service
     - image: strider2038/otus-marketplace-notification-service
       context: services/notification-service
@@ -46,12 +58,12 @@ build:
 deploy:
   helm:
     releases:
-      - name: "identity-service"
-        namespace: "otus"
-        chartPath: "services/identity-service/deployments/identity-service"
-        wait: true
-        valuesFiles:
-          - "deploy/identity-values.yaml"
+#      - name: "identity-service"
+#        namespace: "otus"
+#        chartPath: "services/identity-service/deployments/identity-service"
+#        wait: true
+#        valuesFiles:
+#          - "deploy/identity-values.yaml"
 
       - name: "billing-service"
         namespace: "otus"
@@ -60,9 +72,16 @@ deploy:
         valuesFiles:
           - "deploy/billing-values.yaml"
 
-      - name: "notification-service"
+      - name: "trading-service"
         namespace: "otus"
-        chartPath: "services/notification-service/deployments/notification-service"
+        chartPath: "services/trading-service/deployments/trading-service"
         wait: true
         valuesFiles:
-          - "deploy/notification-values.yaml"
+          - "deploy/trading-values.yaml"
+
+#      - name: "notification-service"
+#        namespace: "otus"
+#        chartPath: "services/notification-service/deployments/notification-service"
+#        wait: true
+#        valuesFiles:
+#          - "deploy/notification-values.yaml"

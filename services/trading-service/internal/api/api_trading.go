@@ -79,6 +79,12 @@ func (c *TradingApiController) Routes() Routes {
 			"/api/v1/items",
 			c.GetTradingItems,
 		},
+		{
+			"GetUserItems",
+			strings.ToUpper("Get"),
+			"/api/v1/user-items",
+			c.GetUserItems,
+		},
 	}
 }
 
@@ -164,6 +170,7 @@ func (c *TradingApiController) CreateTradingItem(w http.ResponseWriter, r *http.
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	tradingItem.UserID = uuid.FromStringOrNil(r.Header.Get("X-User-Id"))
 	tradingItem.UserRole = r.Header.Get("X-User-Role")
 
 	result, err := c.service.CreateTradingItem(r.Context(), *tradingItem)
@@ -210,6 +217,20 @@ func (c *TradingApiController) GetSellOrders(w http.ResponseWriter, r *http.Requ
 // GetTradingItems -
 func (c *TradingApiController) GetTradingItems(w http.ResponseWriter, r *http.Request) {
 	result, err := c.service.GetTradingItems(r.Context())
+	// If an error occured, encode the error with the status code
+	if err != nil {
+		EncodeJSONResponse(err.Error(), &result.Code, w)
+		return
+	}
+	// If no error, encode the body and the result code
+	EncodeJSONResponse(result.Body, &result.Code, w)
+
+}
+
+func (c *TradingApiController) GetUserItems(w http.ResponseWriter, r *http.Request) {
+	userID := uuid.FromStringOrNil(r.Header.Get("X-User-Id"))
+
+	result, err := c.service.GetUserItems(r.Context(), userID)
 	// If an error occured, encode the error with the status code
 	if err != nil {
 		EncodeJSONResponse(err.Error(), &result.Code, w)

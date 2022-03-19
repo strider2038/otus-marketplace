@@ -17,7 +17,7 @@ spec:
       filters:
         - name: "jwt-filter"
     - host: "*"
-      path: "/api/v1/ordering/*"
+      path: "/api/v1/trading/*"
       filters:
         - name: "jwt-filter"
     - host: "*"

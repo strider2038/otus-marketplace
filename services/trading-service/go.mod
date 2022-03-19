@@ -12,6 +12,7 @@ require (
 	github.com/muonsoft/validation v0.8.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.11.0
+	github.com/rs/zerolog v1.15.0
 	github.com/segmentio/kafka-go v0.4.30
 	github.com/stretchr/testify v1.7.0
 	github.com/strider2038/httpserver v0.1.0

@@ -9,9 +9,21 @@
 
 package api
 
-import "github.com/gofrs/uuid"
+import (
+	"context"
+
+	"github.com/gofrs/uuid"
+	"github.com/muonsoft/validation"
+	"github.com/muonsoft/validation/it"
+)
 
 type BillingOperation struct {
 	AccountID uuid.UUID
 	Amount    float64 `json:"amount"`
+}
+
+func (operation BillingOperation) Validate(ctx context.Context, validator *validation.Validator) error {
+	return validator.Validate(ctx,
+		validation.NumberProperty("amount", operation.Amount, it.IsBetweenFloats(1.0, 10000.0)),
+	)
 }

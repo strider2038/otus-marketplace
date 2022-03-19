@@ -2,10 +2,10 @@ package kafka
 
 import (
 	"context"
-	"log"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -15,11 +15,12 @@ type Processor interface {
 
 type Consumer struct {
 	reader     *kafka.Reader
+	logger     zerolog.Logger
 	processors map[string]Processor
 }
 
-func NewConsumer(reader *kafka.Reader, processors map[string]Processor) *Consumer {
-	return &Consumer{reader: reader, processors: processors}
+func NewConsumer(reader *kafka.Reader, logger zerolog.Logger, processors map[string]Processor) *Consumer {
+	return &Consumer{reader: reader, logger: logger, processors: processors}
 }
 
 func (c *Consumer) Run(ctx context.Context) error {
@@ -31,16 +32,16 @@ func (c *Consumer) Run(ctx context.Context) error {
 
 		start := time.Now()
 		name := getMessageName(message)
-		log.Printf(`message "%s" received at %s`, name, start.Format(time.RFC3339))
+		c.logger.Info().Str("name", name).Msg("message received")
 
 		processor := c.processors[name]
 		if processor == nil {
-			log.Printf(`processor not found for message "%s"`, name)
+			c.logger.Error().Str("name", name).Msg("processor not found")
 		} else {
 			err = processor.Process(ctx, message.Value)
-			log.Printf(`message "%s" processed at %s (processing time %s)`, name, time.Now().Format(time.RFC3339), time.Since(start))
+			c.logger.Info().Str("name", name).Dur("processingTime", time.Since(start)).Msg("message processed")
 			if err != nil {
-				log.Printf(`error while processing message "%s": %v`, name, err)
+				c.logger.Info().Str("name", name).Err(err).Msg("processing failed")
 			}
 		}
 
@@ -49,7 +50,7 @@ func (c *Consumer) Run(ctx context.Context) error {
 			return errors.Wrap(err, "failed to commit message")
 		}
 
-		log.Printf(`message "%s" committed at %s`, name, time.Now().Format(time.RFC3339))
+		c.logger.Info().Str("name", name).Dur("processingTime", time.Since(start)).Msg("message committed")
 	}
 }
 
