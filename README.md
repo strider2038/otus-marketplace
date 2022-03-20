@@ -16,7 +16,7 @@
   * [x] helm
   * [x] api gateway mapping
   * [ ] идемпотентные методы
-* [ ] сервис статистики
+* [x] сервис статистики
 * [x] сервис истории сделок
 * [x] сервис уведомлений (сделки)
 * [ ] тесты
@@ -24,8 +24,9 @@
   * [ ] negative cases (not enough money)
   * [x] notifications
   * [x] history
-  * [ ] stats
+  * [x] stats
 * [ ] мониторинг
+* [ ] performance тесты
 
 * дополнительно
   * [ ] debezium

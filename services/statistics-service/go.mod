@@ -1,4 +1,4 @@
-module history-service
+module statistics-service
 
 go 1.17
 

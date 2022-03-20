@@ -671,9 +671,11 @@ components:
         itemId:
           type: string
           format: uuid
-        dealsCount:
+        itemName:
+          type: string
+        count:
           type: integer
-        dealsAmount:
+        amount:
           type: number
     TotalDailyStats:
       type: object
@@ -681,9 +683,21 @@ components:
         date:
           type: string
           format: date
-        dealsCount:
+        count:
           type: integer
-        dealsAmount:
+        amount:
+          type: number
+    Top10:
+      type: object
+      properties:
+        itemId:
+          type: string
+          format: uuid
+        itemName:
+          type: string
+        count:
+          type: integer
+        amount:
           type: number
     Error:
       required:
