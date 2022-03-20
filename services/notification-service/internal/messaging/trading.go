@@ -38,50 +38,50 @@ func NewDealSucceededProcessor(
 }
 
 func (p *DealSucceededProcessor) Process(ctx context.Context, message []byte) error {
-	var order DealSucceeded
-	err := json.Unmarshal(message, &order)
+	var deal DealSucceeded
+	err := json.Unmarshal(message, &deal)
 	if err != nil {
 		return errors.Wrap(err, "failed to unmarshal DealSucceeded event")
 	}
 
-	seller, err := p.users.FindByID(ctx, order.SellerID)
+	seller, err := p.users.FindByID(ctx, deal.SellerID)
 	if err != nil {
-		return errors.WithMessagef(err, "failed to find seller %s", order.SellerID)
+		return errors.WithMessagef(err, "failed to find seller %s", deal.SellerID)
 	}
 
 	err = p.notifications.Add(ctx, notifications.NewNotification(
-		order.SellerID,
+		deal.SellerID,
 		fmt.Sprintf(
 			`Dear, %s %s! You have successfully sold item "%s" for %.2f$ (commission %.2f$) on the marketplace.`,
 			seller.FirstName,
 			seller.LastName,
-			order.ItemName,
-			order.Amount,
-			order.SellerCommission,
+			deal.ItemName,
+			deal.Amount,
+			deal.SellerCommission,
 		),
 	))
 	if err != nil {
-		return errors.WithMessagef(err, "failed to add DealSucceeded notification for seller %s", order.SellerID)
+		return errors.WithMessagef(err, "failed to add DealSucceeded notification for seller %s", deal.SellerID)
 	}
 
-	purchaser, err := p.users.FindByID(ctx, order.PurchaserID)
+	purchaser, err := p.users.FindByID(ctx, deal.PurchaserID)
 	if err != nil {
-		return errors.WithMessagef(err, "failed to find purchaser %s", order.PurchaserID)
+		return errors.WithMessagef(err, "failed to find purchaser %s", deal.PurchaserID)
 	}
 
 	err = p.notifications.Add(ctx, notifications.NewNotification(
-		order.PurchaserID,
+		deal.PurchaserID,
 		fmt.Sprintf(
 			`Dear, %s %s! You have successfully bought item "%s" for %.2f$ (commission %.2f$) on the marketplace.`,
 			purchaser.FirstName,
 			purchaser.LastName,
-			order.ItemName,
-			order.Amount,
-			order.PurchaserCommission,
+			deal.ItemName,
+			deal.Amount,
+			deal.PurchaserCommission,
 		),
 	))
 	if err != nil {
-		return errors.WithMessagef(err, "failed to add DealSucceeded notification for seller %s", order.PurchaserID)
+		return errors.WithMessagef(err, "failed to add DealSucceeded notification for seller %s", deal.PurchaserID)
 	}
 
 	return nil

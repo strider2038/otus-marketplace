@@ -21,6 +21,10 @@ spec:
       filters:
         - name: "jwt-filter"
     - host: "*"
+      path: "/api/v1/history/*"
+      filters:
+        - name: "jwt-filter"
+    - host: "*"
       path: "/api/v1/notifications"
       filters:
         - name: "jwt-filter"

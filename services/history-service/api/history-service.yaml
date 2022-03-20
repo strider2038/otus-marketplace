@@ -1,0 +1,71 @@
+openapi: 3.0.0
+info:
+  title: Public API
+  version: 1.0.0
+servers:
+  - url: http://example.domain/api/v1/
+    description: Example Server
+tags:
+  - name: history
+    description: Trading history
+security:
+  - JWT: []
+paths:
+  /deals:
+    get:
+      tags: [history]
+      description: Get deals history
+      operationId: getDealsHistory
+      responses:
+        "200":
+          description: User trading history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Deal'
+
+components:
+  securitySchemes:
+    JWT:
+      type: apiKey
+      name: accessToken
+      in: cookie
+  schemas:
+    Deal:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        itemId:
+          type: string
+          format: uuid
+        itemName:
+          type: string
+        type:
+          type: string
+          enum:
+            - purchase
+            - sale
+        amount:
+          type: number
+          minimum: 1.0
+        commission:
+          type: number
+          minimum: 1.0
+        completedAt:
+          type: string
+          format: date-time
+    Error:
+      required:
+        - code
+        - message
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string

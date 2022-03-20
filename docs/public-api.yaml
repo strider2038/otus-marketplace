@@ -11,6 +11,10 @@ tags:
     description: Operations about user
   - name: trading
     description: Trading operations
+  - name: history
+    description: Trading history
+  - name: statistics
+    description: Trading statistics
   - name: billing
     description: Billing operations
   - name: notifications
@@ -299,6 +303,21 @@ paths:
                 items:
                   $ref: '#/components/schemas/UserItem'
 
+  /history/deals:
+    get:
+      tags: [history]
+      description: Get deals history
+      operationId: getDealsHistory
+      responses:
+        "200":
+          description: User trading history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Deal'
+
   /statistics/daily-stats:
     get:
       tags: [statistics]
@@ -313,6 +332,20 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/DailyStats'
+  /statistics/total-daily-stats:
+    get:
+      tags: [statistics]
+      description: Get total daily stats
+      operationId: getTotalDailyStats
+      responses:
+        "200":
+          description: Total daily stats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TotalDailyStats'
   /statistics/top10:
     get:
       tags: [statistics]
@@ -607,6 +640,28 @@ components:
           type: string
           format: date-time
           readOnly: true
+    Deal:
+      type: object
+      properties:
+        itemId:
+          type: string
+          format: uuid
+        itemName:
+          type: string
+        type:
+          type: string
+          enum:
+            - purchase
+            - sale
+        amount:
+          type: number
+          minimum: 1.0
+        commission:
+          type: number
+          minimum: 1.0
+        completedAt:
+          type: string
+          format: date-time
     DailyStats:
       type: object
       properties:
@@ -616,6 +671,16 @@ components:
         itemId:
           type: string
           format: uuid
+        dealsCount:
+          type: integer
+        dealsAmount:
+          type: number
+    TotalDailyStats:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
         dealsCount:
           type: integer
         dealsAmount:

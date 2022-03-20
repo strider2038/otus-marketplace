@@ -43,6 +43,18 @@ build:
       docker:
         dockerfile: build/package/migrations/Dockerfile
 
+    ### History service
+    - image: strider2038/otus-marketplace-history-service
+      context: services/history-service
+      docker:
+        dockerfile: build/package/history-service/Dockerfile
+        buildArgs:
+          APP_VERSION: local
+    - image: strider2038/otus-marketplace-history-migrations
+      context: services/history-service
+      docker:
+        dockerfile: build/package/migrations/Dockerfile
+
     ### Notification service
     - image: strider2038/otus-marketplace-notification-service
       context: services/notification-service
@@ -72,13 +84,20 @@ deploy:
 #        valuesFiles:
 #          - "deploy/billing-values.yaml"
 #
-#      - name: "trading-service"
-#        namespace: "otus"
-#        chartPath: "services/trading-service/deployments/trading-service"
-#        wait: true
-#        valuesFiles:
-#          - "deploy/trading-values.yaml"
-#
+      - name: "trading-service"
+        namespace: "otus"
+        chartPath: "services/trading-service/deployments/trading-service"
+        wait: true
+        valuesFiles:
+          - "deploy/trading-values.yaml"
+
+      - name: "history-service"
+        namespace: "otus"
+        chartPath: "services/history-service/deployments/history-service"
+        wait: true
+        valuesFiles:
+          - "deploy/history-values.yaml"
+
 #      - name: "notification-service"
 #        namespace: "otus"
 #        chartPath: "services/notification-service/deployments/notification-service"

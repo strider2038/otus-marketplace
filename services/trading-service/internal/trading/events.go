@@ -2,6 +2,7 @@ package trading
 
 import (
 	"context"
+	"time"
 
 	"github.com/gofrs/uuid"
 )
@@ -26,6 +27,7 @@ type DealSucceededEvent struct {
 	Amount              float64   `json:"amount"`
 	SellerCommission    float64   `json:"sellerCommission"`
 	PurchaserCommission float64   `json:"purchaserCommission"`
+	CompletedAt         time.Time `json:"completedAt"`
 }
 
 func (event DealSucceededEvent) Name() string {

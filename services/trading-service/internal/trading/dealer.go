@@ -3,6 +3,7 @@ package trading
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/gofrs/uuid"
 	"github.com/pkg/errors"
@@ -327,6 +328,7 @@ func (dealer *Dealer) approveAccrual(ctx context.Context, accrual *Accrual) erro
 		Amount:              accrual.Amount,
 		SellerCommission:    sellOrder.Commission,
 		PurchaserCommission: purchaseOrder.Commission,
+		CompletedAt:         time.Now(),
 	})
 
 	return nil

@@ -60,6 +60,9 @@ channels:
             purchaserCommission:
               type: number
               minimum: 1.0
+            completedAt:
+              type: string
+              format: date-time
 
   Trading/PurchaseFailed:
     publish:

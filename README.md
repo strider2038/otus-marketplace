@@ -17,13 +17,13 @@
   * [x] api gateway mapping
   * [ ] идемпотентные методы
 * [ ] сервис статистики
-* [ ] сервис истории сделок
+* [x] сервис истории сделок
 * [x] сервис уведомлений (сделки)
 * [ ] тесты
   * [x] trading
   * [ ] negative cases (not enough money)
   * [x] notifications
-  * [ ] history
+  * [x] history
   * [ ] stats
 * [ ] мониторинг
 
