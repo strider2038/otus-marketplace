@@ -39,7 +39,7 @@ func main() {
 	group := ossync.NewGroup(context.Background())
 	group.Go(httpserver.New(address, router).ListenAndServe)
 	group.Go(di.NewIdentityConsumer(connection, config).Run)
-	group.Go(di.NewOrderConsumer(connection, config).Run)
+	group.Go(di.NewTradingConsumer(connection, config).Run)
 	err = group.Wait()
 	if err != nil {
 		log.Fatalln(err)

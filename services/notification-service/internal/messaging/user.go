@@ -18,6 +18,10 @@ type UserCreated struct {
 	Phone     string    `json:"phone,omitempty"`
 }
 
+func (m UserCreated) Name() string {
+	return "Identity/UserCreated"
+}
+
 type UserCreatedProcessor struct {
 	users notifications.UserRepository
 }

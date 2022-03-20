@@ -2,6 +2,7 @@ package di
 
 import (
 	"log"
+	"os"
 
 	"notification-service/internal/kafka"
 	"notification-service/internal/messaging"
@@ -9,6 +10,7 @@ import (
 	"notification-service/internal/postgres/database"
 
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/rs/zerolog"
 	segmentio "github.com/segmentio/kafka-go"
 )
 
@@ -23,9 +25,7 @@ func NewIdentityConsumer(connection *pgxpool.Pool, config Config) *kafka.Consume
 		ErrorLogger: log.Default(),
 	})
 
-	consumer := kafka.NewConsumer(reader, map[string]kafka.Processor{
-		"Identity/UserCreated": messaging.NewUserCreatedProcessor(users),
+	return kafka.NewConsumer(reader, zerolog.New(os.Stdout), map[string]kafka.Processor{
+		messaging.UserCreated{}.Name(): messaging.NewUserCreatedProcessor(users),
 	})
-
-	return consumer
 }

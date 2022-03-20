@@ -19,6 +19,12 @@ CREATE TABLE "notification"
     created_at timestamp not null default now()
 );
 
+INSERT INTO "user" (id, email, first_name, last_name)
+VALUES ('2a104e66-1c78-4577-ab15-3ae935180c17',
+        'broker@marketplace.com',
+        'Broker',
+        'Account');
+
 -- +goose StatementEnd
 
 -- +goose Down

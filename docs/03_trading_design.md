@@ -156,12 +156,16 @@ sequenceDiagram
 
 ### Сущности статистики торговой площадки
 
-* сделки за день (daily stat)
+* сделки за день по товарам (daily stat)
   * date
   * item id
   * deals count - количество сделок за день
   * deals amount - общая сумма сделок за день
-* топ сделок (top deals)
+* общие сделки за день (total daily stat)
+  * date
+  * deals count - количество сделок за день
+  * deals amount - общая сумма сделок за день
+* топ сделок за все время (top deals)
   * item id
   * deals count - количество сделок за день
   * deals amount - общая сумма сделок за день
@@ -179,5 +183,6 @@ sequenceDiagram
     * withdraw
     * payment
     * accrual
+    * commission
   * amount
   * description

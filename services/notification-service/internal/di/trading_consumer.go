@@ -2,6 +2,7 @@ package di
 
 import (
 	"log"
+	"os"
 
 	"notification-service/internal/kafka"
 	"notification-service/internal/messaging"
@@ -9,10 +10,11 @@ import (
 	"notification-service/internal/postgres/database"
 
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/rs/zerolog"
 	segmentio "github.com/segmentio/kafka-go"
 )
 
-func NewOrderConsumer(connection *pgxpool.Pool, config Config) *kafka.Consumer {
+func NewTradingConsumer(connection *pgxpool.Pool, config Config) *kafka.Consumer {
 	db := database.New(connection)
 	users := postgres.NewUserRepository(db)
 	notifications := postgres.NewNotificationRepository(db)
@@ -20,14 +22,12 @@ func NewOrderConsumer(connection *pgxpool.Pool, config Config) *kafka.Consumer {
 	reader := segmentio.NewReader(segmentio.ReaderConfig{
 		Brokers:     []string{config.KafkaConsumerURL},
 		GroupID:     "notification",
-		Topic:       "order-events",
+		Topic:       "trading-events",
 		ErrorLogger: log.Default(),
 	})
 
-	consumer := kafka.NewConsumer(reader, map[string]kafka.Processor{
-		"Ordering/OrderSucceeded": messaging.NewOrderSucceededProcessor(users, notifications),
-		"Ordering/OrderFailed":    messaging.NewOrderFailedProcessor(users, notifications),
+	return kafka.NewConsumer(reader, zerolog.New(os.Stdout), map[string]kafka.Processor{
+		messaging.DealSucceeded{}.Name():  messaging.NewDealSucceededProcessor(users, notifications),
+		messaging.PurchaseFailed{}.Name(): messaging.NewPurchaseFailedProcessor(users, notifications),
 	})
-
-	return consumer
 }

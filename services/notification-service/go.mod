@@ -10,6 +10,7 @@ require (
 	github.com/jackc/pgx/v4 v4.14.1
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.11.0
+	github.com/rs/zerolog v1.15.0
 	github.com/segmentio/kafka-go v0.4.26
 	github.com/strider2038/httpserver v0.1.0
 	github.com/strider2038/ossync v0.1.0
