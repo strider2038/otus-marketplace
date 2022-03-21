@@ -1,0 +1,174 @@
+asyncapi: 2.0.0
+info:
+  title: Trading system
+  version: '1.0.0'
+  description: |
+    Trading system based on event collaboration
+defaultContentType: application/json
+
+channels:
+  Identity/UserCreated:
+    publish:
+      message:
+        tags:
+          - name: identity
+        name: User created
+        payload:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            email:
+              type: string
+              format: email
+            firstName:
+              type: string
+            lastName:
+              type: string
+            phone:
+              type: string
+              format: phone
+
+  Trading/DealSucceeded:
+    publish:
+      message:
+        tags:
+          - name: trading
+        name: Deal created
+        title: Deal successfully created
+        payload:
+          type: object
+          properties:
+            sellerId:
+              type: string
+              format: uuid
+            purchaserId:
+              type: string
+              format: uuid
+            itemId:
+              type: string
+              format: uuid
+            itemName:
+              type: string
+            amount:
+              type: number
+              minimum: 1.0
+            sellerCommission:
+              type: number
+              minimum: 1.0
+            purchaserCommission:
+              type: number
+              minimum: 1.0
+            completedAt:
+              type: string
+              format: date-time
+
+  Trading/PurchaseFailed:
+    publish:
+      message:
+        tags:
+          - name: trading
+        name: Purchase failed
+        title: Purchase failed
+        payload:
+          type: object
+          properties:
+            purchaserId:
+              type: string
+              format: uuid
+            itemId:
+              type: string
+              format: uuid
+            itemName:
+              type: string
+            amount:
+              type: number
+              minimum: 1.0
+            reason:
+              type: string
+
+  Billing/CreatePayment:
+    subscribe:
+      message:
+        tags:
+          - name: trading
+          - name: billing
+        name: Create payment
+        payload:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            userId:
+              type: string
+              format: uuid
+            amount:
+              type: number
+              minimum: 1.0
+            description:
+              type: string
+
+  Billing/PaymentSucceeded:
+    publish:
+      message:
+        tags:
+          - name: billing
+        name: Payment succeeded
+        payload:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+
+  Billing/PaymentDeclined:
+    publish:
+      message:
+        tags:
+          - name: billing
+        name: Payment failed
+        payload:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            reason:
+              type: string
+
+  Billing/CreateAccrual:
+    subscribe:
+      message:
+        tags:
+          - name: trading
+          - name: billing
+        name: Create accrual
+        payload:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            userId:
+              type: string
+              format: uuid
+            amount:
+              type: number
+              minimum: 1.0
+            description:
+              type: string
+
+  Billing/AccrualApproved:
+    publish:
+      message:
+        tags:
+          - name: billing
+        name: Accrual approved
+        payload:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid

@@ -1,0 +1,20 @@
+replicaCount: 2
+
+migrations:
+  version: "20220309212741"
+
+postgresql:
+  postgresqlPassword: "pa$$word"
+  persistence:
+    size: 1Gi
+
+secrets:
+  brokerId: '2a104e66-1c78-4577-ab15-3ae935180c17'
+  postgres:
+    password: "pa$$word"
+    host: "billing-service-postgresql.otus.svc.cluster.local"
+  kafka:
+    consumer:
+      url: "kafka.otus.svc.cluster.local:9092"
+    producer:
+      url: "kafka-0.kafka-headless.otus.svc.cluster.local:9092"

@@ -1,0 +1,27 @@
+replicaCount: 1
+
+service:
+  type: NodePort
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+    - name: https
+      port: 443
+      targetPort: 8443
+  externalTrafficPolicy:
+
+enableAES: true
+
+redis:
+  create: true
+
+authService:
+  create: true
+
+licenseKey:
+  value: "eyJhbGciOiJQUzUxMiIsInR5cCI6IkpXVCJ9.eyJsaWNlbnNlX2tleV92ZXJzaW9uIjoidjIiLCJjdXN0b21lcl9pZCI6InN0cmlkZXIyMDM4QHlhbmRleC5ydS0xNjM5MzEyMzMwIiwiY3VzdG9tZXJfZW1haWwiOiJzdHJpZGVyMjAzOEB5YW5kZXgucnUiLCJlbmFibGVkX2ZlYXR1cmVzIjpbIiIsImZpbHRlciIsInJhdGVsaW1pdCIsInRyYWZmaWMiLCJkZXZwb3J0YWwiXSwiZW5mb3JjZWRfbGltaXRzIjpbeyJsIjoiZGV2cG9ydGFsLXNlcnZpY2VzIiwidiI6NX0seyJsIjoicmF0ZWxpbWl0LXNlcnZpY2UiLCJ2Ijo1fSx7ImwiOiJhdXRoZmlsdGVyLXNlcnZpY2UiLCJ2Ijo1fSx7ImwiOiJ0cmFmZmljLXVzZXJzIiwidiI6NX1dLCJtZXRhZGF0YSI6e30sImV4cCI6MTY3MDg0ODMzMCwiaWF0IjoxNjM5MzEyMzMwLCJuYmYiOjE2MzkzMTIzMzB9.irlUF2ybMHGsFOpbu0qPK8Kdd4Fvnnw-vHwzkT6lHUpENHrZ8mi7U1QixpudtxSfbjsXnBFeuiKHNa6ucFAyAbDNmL_7vUk8QUsKi69G2YiZ2H2faC6r974kakF7rahy2sEFbh-czRVLR_Uq9NwTQvol7R8w_rasdDJKuwFPG84cvDanh7iUfEl8Tceo9CoHNI2rWmH2F0lAI3phJUgCOHsy8NR8gLSE-mHQ7tho-yDXyJqSKNjJTXu4ihehGqW3RZrdaqGijWSJR1uabxhh4B-3Xhy3nWPFqfWV4Fd_4DAjUMfACUbQ4xqCSFaQ_kbfMHKb-WO6wnZuuBSXXBSRHQ"
+  createSecret: true
+
+rateLimit:
+  create: false

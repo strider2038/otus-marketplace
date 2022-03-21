@@ -1,0 +1,11 @@
+version: "1"
+packages:
+  - name: "database"
+    path: "internal/postgres/database"
+    queries: "configs/sqlc/query.sql"
+    schema: "configs/sqlc/schema.sql"
+    engine: "postgresql"
+    sql_package: "pgx/v4"
+overrides:
+  - go_type: "github.com/gofrs/uuid.UUID"
+    db_type: "uuid"

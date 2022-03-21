@@ -1,0 +1,125 @@
+apiVersion: skaffold/v2beta24
+kind: Config
+metadata:
+  name: otus-micro
+build:
+  tagPolicy:
+    envTemplate:
+      template: "v1"
+  artifacts:
+    ### Identity service
+    - image: strider2038/otus-marketplace-identity-service
+      context: services/identity-service
+      docker:
+        dockerfile: build/package/identity-service/Dockerfile
+        buildArgs:
+          APP_VERSION: local
+    - image: strider2038/otus-marketplace-identity-migrations
+      context: services/identity-service
+      docker:
+        dockerfile: build/package/migrations/Dockerfile
+
+    ### Billing service
+    - image: strider2038/otus-marketplace-billing-service
+      context: services/billing-service
+      docker:
+        dockerfile: build/package/billing-service/Dockerfile
+        buildArgs:
+          APP_VERSION: local
+    - image: strider2038/otus-marketplace-billing-migrations
+      context: services/billing-service
+      docker:
+        dockerfile: build/package/migrations/Dockerfile
+
+    ### Trading service
+    - image: strider2038/otus-marketplace-trading-service
+      context: services/trading-service
+      docker:
+        dockerfile: build/package/trading-service/Dockerfile
+        buildArgs:
+          APP_VERSION: local
+    - image: strider2038/otus-marketplace-trading-migrations
+      context: services/trading-service
+      docker:
+        dockerfile: build/package/migrations/Dockerfile
+
+    ### History service
+    - image: strider2038/otus-marketplace-history-service
+      context: services/history-service
+      docker:
+        dockerfile: build/package/history-service/Dockerfile
+        buildArgs:
+          APP_VERSION: local
+    - image: strider2038/otus-marketplace-history-migrations
+      context: services/history-service
+      docker:
+        dockerfile: build/package/migrations/Dockerfile
+
+    ### Statistics service
+    - image: strider2038/otus-marketplace-statistics-service
+      context: services/statistics-service
+      docker:
+        dockerfile: build/package/statistics-service/Dockerfile
+        buildArgs:
+          APP_VERSION: local
+    - image: strider2038/otus-marketplace-statistics-migrations
+      context: services/statistics-service
+      docker:
+        dockerfile: build/package/migrations/Dockerfile
+
+    ### Notification service
+    - image: strider2038/otus-marketplace-notification-service
+      context: services/notification-service
+      docker:
+        dockerfile: build/package/notification-service/Dockerfile
+        buildArgs:
+          APP_VERSION: local
+    - image: strider2038/otus-marketplace-notification-migrations
+      context: services/notification-service
+      docker:
+        dockerfile: build/package/migrations/Dockerfile
+
+deploy:
+  helm:
+    releases:
+#      - name: "identity-service"
+#        namespace: "otus"
+#        chartPath: "services/identity-service/deployments/identity-service"
+#        wait: true
+#        valuesFiles:
+#          - "deploy/identity-values.yaml"
+
+#      - name: "billing-service"
+#        namespace: "otus"
+#        chartPath: "services/billing-service/deployments/billing-service"
+#        wait: true
+#        valuesFiles:
+#          - "deploy/billing-values.yaml"
+#
+#      - name: "trading-service"
+#        namespace: "otus"
+#        chartPath: "services/trading-service/deployments/trading-service"
+#        wait: true
+#        valuesFiles:
+#          - "deploy/trading-values.yaml"
+#
+#      - name: "history-service"
+#        namespace: "otus"
+#        chartPath: "services/history-service/deployments/history-service"
+#        wait: true
+#        valuesFiles:
+#          - "deploy/history-values.yaml"
+
+      - name: "statistics-service"
+        namespace: "otus"
+        chartPath: "services/statistics-service/deployments/statistics-service"
+        wait: true
+        valuesFiles:
+          - "deploy/statistics-values.yaml"
+
+#      - name: "notification-service"
+#        namespace: "otus"
+#        chartPath: "services/notification-service/deployments/notification-service"
+#        wait: true
+#        valuesFiles:
+#          - "deploy/notification-values.yaml"

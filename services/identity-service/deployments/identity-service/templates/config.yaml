@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "identity-service.fullname" . }}
+data:
+  APP_ENV: "{{ .Values.application.env }}"
+  DOMAIN_URL: "{{ .Values.application.domainUrl }}"
+  MIGRATION_VERSION: "{{ .Values.migrations.version }}"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "identity-service.fullname" . }}
+type: Opaque
+data:
+  DATABASE_URL: {{ include "databaseUrl" . }}
+  KAFKA_URL: {{ include "kafkaUrl" . }}
+  JWT_PRIVATE_KEY: {{ include "jwtPrivateKey" . }}
+  JWT_PUBLIC_KEY: {{ include "jwtPublicKey" . }}

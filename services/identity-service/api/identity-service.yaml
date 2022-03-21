@@ -1,0 +1,185 @@
+---
+openapi: 3.0.0
+info:
+  title: Identity Service
+  version: 1.0.0
+servers:
+  - url: http://example.domain/api/v1/
+    description: Example Server
+tags:
+  - name: identity
+    description: Operations about user
+security:
+  - JWT: []
+paths:
+  /identity/register:
+    post:
+      security: []
+      tags:
+        - identity
+      summary: Register a user
+      operationId: registerUser
+      requestBody:
+        description: Registration form
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/Login'
+                - type: object
+                  properties:
+                    firstName:
+                      type: string
+                    lastName:
+                      type: string
+      responses:
+        "201":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /identity/login:
+    post:
+      security: []
+      tags:
+        - identity
+      summary: Login to the system
+      operationId: loginUser
+      requestBody:
+        description: Login form
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Login'
+      responses:
+        "200":
+          description: Login response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessToken'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /identity/logout:
+    post:
+      tags:
+        - identity
+      summary: Logout from the system
+      operationId: logoutUser
+      responses:
+        "204":
+          description: Logout succeeded
+  /identity/profile:
+    get:
+      tags:
+        - identity
+      description: Returns a current user profile
+      operationId: getCurrentUser
+      responses:
+        "200":
+          description: User response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - identity
+      description: Update current user profile
+      operationId: updateCurrentUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+            examples:
+              sample-user:
+                summary: Example
+                value:
+                  firstName: Julie
+                  lastName: Doe
+                  email: bestjohn@doe.com
+                  phone: +71004242424
+      responses:
+        "200":
+          description: User response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  securitySchemes:
+    JWT:
+      type: apiKey
+      name: accessToken
+      in: cookie
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+          format: phone
+    Login:
+      type: object
+      required: [ email, password ]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+    AccessToken:
+      type: object
+      required: [ accessToken ]
+      properties:
+        accessToken:
+          type: string
+    Error:
+      required:
+        - code
+        - message
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string

@@ -1,0 +1,112 @@
+---
+openapi: 3.0.0
+info:
+  title: Public API
+  version: 1.0.0
+servers:
+  - url: http://example.domain/api/v1/
+    description: Example Server
+tags:
+  - name: statistics
+    description: Trading statistics
+security:
+  - JWT: []
+paths:
+  /daily-stats:
+    get:
+      tags: [statistics]
+      description: Get daily stats
+      operationId: getDailyStats
+      responses:
+        "200":
+          description: Daily stats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DailyStats'
+  /total-daily-stats:
+    get:
+      tags: [statistics]
+      description: Get total daily stats
+      operationId: getTotalDailyStats
+      responses:
+        "200":
+          description: Total daily stats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TotalDailyStats'
+  /top10:
+    get:
+      tags: [statistics]
+      description: Get top 10
+      operationId: getTop10
+      responses:
+        "200":
+          description: Top 10 deals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Top10'
+
+components:
+  securitySchemes:
+    JWT:
+      type: apiKey
+      name: accessToken
+      in: cookie
+  schemas:
+    DailyStats:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        itemId:
+          type: string
+          format: uuid
+        itemName:
+          type: string
+        count:
+          type: integer
+        amount:
+          type: number
+    TotalDailyStats:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        count:
+          type: integer
+        amount:
+          type: number
+    Top10:
+      type: object
+      properties:
+        itemId:
+          type: string
+          format: uuid
+        itemName:
+          type: string
+        count:
+          type: integer
+        amount:
+          type: number
+    Error:
+      required:
+        - code
+        - message
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string

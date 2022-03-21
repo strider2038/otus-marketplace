@@ -1,0 +1,30 @@
+apiVersion: getambassador.io/v2
+kind: FilterPolicy
+metadata:
+  name: "api-filter-policy"
+spec:
+  rules:
+    - host: "*"
+      path: "/api/v1/identity/logout"
+      filters:
+        - name: "jwt-filter"
+    - host: "*"
+      path: "/api/v1/identity/profile"
+      filters:
+        - name: "jwt-filter"
+    - host: "*"
+      path: "/api/v1/billing/*"
+      filters:
+        - name: "jwt-filter"
+    - host: "*"
+      path: "/api/v1/trading/*"
+      filters:
+        - name: "jwt-filter"
+    - host: "*"
+      path: "/api/v1/history/*"
+      filters:
+        - name: "jwt-filter"
+    - host: "*"
+      path: "/api/v1/notifications"
+      filters:
+        - name: "jwt-filter"

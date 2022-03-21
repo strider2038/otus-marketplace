@@ -1,0 +1,13 @@
+apiVersion: getambassador.io/v2
+kind: Mapping
+metadata:
+  name: history-mapping
+spec:
+  hostname: "*"
+  prefix: "/api/v1/history/"
+  rewrite: "/api/v1/"
+  remainder: "/api/v1/"
+  service: history-service:8000
+  retry_policy:
+    retry_on: "5xx"
+    num_retries: 2

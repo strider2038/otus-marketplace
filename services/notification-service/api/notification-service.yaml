@@ -1,0 +1,60 @@
+---
+openapi: 3.0.0
+info:
+  title: Services API (hybrid variant)
+  version: 1.0.0
+servers:
+  - url: http://example.domain/api/v1/
+    description: Example Server
+tags:
+  - name: notifications
+    description: Notification service
+security:
+  - UserRequest: [ ]
+paths:
+  /notifications:
+    get:
+      tags: [ notifications ]
+      description: Get current user notifications
+      operationId: getNotifications
+      responses:
+        "200":
+          description: Notifications response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+
+components:
+  securitySchemes:
+    UserRequest:
+      type: apiKey
+      in: header
+      name: X-User-Id
+  schemas:
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        message:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+    Error:
+      required:
+        - code
+        - message
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string

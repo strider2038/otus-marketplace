@@ -1,0 +1,17 @@
+replicaCount: 2
+
+migrations:
+  version: "20220320211120"
+
+postgresql:
+  postgresqlPassword: "pa$$word"
+  persistence:
+    size: 1Gi
+
+secrets:
+  postgres:
+    password: "pa$$word"
+    host: "statistics-service-postgresql.otus.svc.cluster.local"
+  kafka:
+    consumer:
+      url: "kafka.otus.svc.cluster.local:9092"

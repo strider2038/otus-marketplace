@@ -1,0 +1,289 @@
+---
+openapi: 3.0.0
+info:
+  title: Public API
+  version: 1.0.0
+servers:
+  - url: http://example.domain/api/v1/
+    description: Example Server
+tags:
+  - name: trading
+    description: Trading operations
+security:
+  - JWT: []
+paths:
+  /purchase-orders:
+    get:
+      tags: [trading]
+      description: Get current user purchase orders
+      operationId: getPurchaseOrders
+      responses:
+        "200":
+          description: Purchase order response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PurchaseOrder'
+    post:
+      tags: [trading]
+      description: Create a new purchase order
+      operationId: createPurchaseOrder
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrder'
+      responses:
+        "202":
+          description: Purchase order created
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /purchase-orders/{purchaseOrderId}/cancel:
+    post:
+      tags: [ trading ]
+      description: Cancel a purchase order
+      operationId: cancelPurchaseOrder
+      parameters:
+        - in: path
+          name: purchaseOrderId
+          schema:
+            type: string
+            format: uuid
+          required: true
+      responses:
+        "200":
+          description: Purchase order canceled
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /sell-orders:
+    get:
+      tags: [trading]
+      description: Get current user sell orders
+      operationId: getSellOrders
+      responses:
+        "200":
+          description: Sell order response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SellOrder'
+    post:
+      tags: [trading]
+      description: Create a new sell order
+      operationId: createSellOrder
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SellOrder'
+      responses:
+        "202":
+          description: Sell order created
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /sell-orders/{sellOrderId}/cancel:
+    post:
+      tags: [ trading ]
+      description: Cancel a sell order
+      operationId: cancelSellOrder
+      parameters:
+        - in: path
+          name: sellOrderId
+          schema:
+            type: string
+            format: uuid
+          required: true
+      responses:
+        "200":
+          description: Sell order canceled
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /items:
+    get:
+      tags: [trading]
+      description: Get trading items
+      operationId: getTradingItems
+      responses:
+        "200":
+          description: Trading items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TradingItem'
+    post:
+      tags: [trading]
+      description: Create a trading item
+      operationId: createTradingItem
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TradingItem'
+      responses:
+        "201":
+          description: Trading item created
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /user-items:
+    get:
+      tags: [trading]
+      description: Get user trading items
+      operationId: getUserTradingItems
+      responses:
+        "200":
+          description: User trading items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserItem'
+
+components:
+  securitySchemes:
+    JWT:
+      type: apiKey
+      name: accessToken
+      in: cookie
+  schemas:
+    PurchaseOrder:
+      type: object
+      required: [ id, price ]
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        itemId:
+          type: string
+          format: uuid
+        price:
+          type: number
+          minimum: 1
+        commission:
+          type: number
+          minimum: 1
+          readOnly: true
+        status:
+          type: string
+          readOnly: true
+          enum:
+            - pending
+            - canceled
+            - paymentPending
+            - paymentSucceeded
+            - paymentFailed
+            - approved
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          readOnly: true
+    SellOrder:
+      type: object
+      required: [ id, price ]
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        itemId:
+          type: string
+          format: uuid
+        price:
+          type: number
+          minimum: 1
+        commission:
+          type: number
+          minimum: 1
+          readOnly: true
+        status:
+          type: string
+          readOnly: true
+          enum:
+            - pending
+            - canceled
+            - dealPending
+            - accrualPending
+            - approved
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          readOnly: true
+    TradingItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        initialCount:
+          type: integer
+        initialPrice:
+          type: number
+        commission:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+    UserItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        count:
+          type: integer
+        onSaleCount:
+          type: integer
+    Error:
+      required:
+        - code
+        - message
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
