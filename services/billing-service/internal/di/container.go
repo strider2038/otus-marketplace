@@ -1,6 +1,7 @@
 package di
 
 import (
+	"context"
 	"log"
 	"os"
 
@@ -8,39 +9,70 @@ import (
 	"billing-service/internal/kafka"
 	"billing-service/internal/postgres"
 
+	"github.com/bsm/redislock"
+	"github.com/go-redis/redis/v8"
 	"github.com/gofrs/uuid"
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/log/zerologadapter"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/muonsoft/validation"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	segmentio "github.com/segmentio/kafka-go"
-	"github.com/strider2038/pkg/persistence/pgx"
+	pgxadapter "github.com/strider2038/pkg/persistence/pgx"
 )
 
 type Container struct {
-	connection pgx.Connection
-	config     Config
-	logger     zerolog.Logger
+	dbConnection    pgxadapter.Connection
+	redisConnection *redis.Client
+	config          Config
+	logger          zerolog.Logger
 
+	locker              *redislock.Client
 	accountRepository   *postgres.AccountRepository
 	operationRepository *postgres.OperationRepository
-	txManager           *pgx.TransactionManager
+	txManager           *pgxadapter.TransactionManager
 	billingDispatcher   *kafka.Dispatcher
 	broker              *billing.BrokerAccount
 	validator           *validation.Validator
 }
 
-func NewContainer(connection pgx.Connection, config Config) (*Container, error) {
+func NewContainer(config Config) (*Container, error) {
 	brokerID, err := uuid.FromString(config.BrokerID)
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid broker id")
 	}
 
-	c := &Container{connection: connection, config: config}
+	dbConfig, err := pgxpool.ParseConfig(config.DatabaseURL)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse postgres config:")
+	}
 
+	logger := zerolog.New(os.Stdout)
+	dbConfig.ConnConfig.Logger = zerologadapter.NewLogger(logger)
+	dbConfig.ConnConfig.LogLevel = pgx.LogLevelInfo
+
+	pool, err := pgxpool.ConnectConfig(context.Background(), dbConfig)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to connect to postgres")
+	}
+
+	redisClient := redis.NewClient(&redis.Options{Network: "tcp", Addr: config.RedisURL})
+	ping := redisClient.Ping(context.Background())
+	err = ping.Err()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to connect to redis")
+	}
+
+	c := &Container{config: config}
+
+	c.dbConnection = pgxadapter.NewPool(pool)
+	c.redisConnection = redisClient
+	c.locker = redislock.New(c.redisConnection)
 	c.logger = zerolog.New(os.Stdout)
-	c.accountRepository = postgres.NewAccountRepository(connection)
-	c.operationRepository = postgres.NewOperationRepository(connection)
-	c.txManager = pgx.NewTransactionManager(connection)
+	c.accountRepository = postgres.NewAccountRepository(c.dbConnection)
+	c.operationRepository = postgres.NewOperationRepository(c.dbConnection)
+	c.txManager = pgxadapter.NewTransactionManager(c.dbConnection)
 	c.broker = billing.NewBrokerAccount(
 		brokerID,
 		c.accountRepository,

@@ -13,16 +13,23 @@ import (
 )
 
 func NewAPIRouter(c *Container) http.Handler {
-	apiService := api.NewBillingApiService(c.accountRepository, c.operationRepository, c.txManager, c.validator)
-	apiController := api.NewBillingApiController(apiService)
+	apiService := api.NewBillingApiService(
+		c.accountRepository,
+		c.operationRepository,
+		c.txManager,
+		c.validator,
+		c.locker,
+		c.config.LockTimeout,
+	)
 
+	apiController := api.NewBillingApiController(apiService)
 	apiRouter := api.NewRouter(apiController)
 	metrics := api.NewMetrics("billing_service")
 	apiRouter.Use(func(handler http.Handler) http.Handler {
 		return api.MetricsMiddleware(handler, metrics)
 	})
 
-	router := NewRouter(c.connection, c.config)
+	router := NewRouter(c.dbConnection, c.config)
 	router.PathPrefix("/api").Handler(apiRouter)
 	router.Handle("/metrics", promhttp.Handler())
 

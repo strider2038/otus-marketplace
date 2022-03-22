@@ -61,13 +61,14 @@ func (c *BillingApiController) Routes() Routes {
 func (c *BillingApiController) GetBillingAccount(w http.ResponseWriter, r *http.Request) {
 	id := uuid.FromStringOrNil(r.Header.Get("X-User-Id"))
 
-	result, err := c.service.GetBillingAccount(r.Context(), id)
+	result, eTag, err := c.service.GetBillingAccount(r.Context(), id)
 	// If an error occured, encode the error with the status code
 	if err != nil {
 		EncodeJSONResponse(err.Error(), &result.Code, w)
 		return
 	}
 	// If no error, encode the body and the result code
+	w.Header().Set("ETag", eTag)
 	EncodeJSONResponse(result.Body, &result.Code, w)
 }
 
@@ -79,6 +80,7 @@ func (c *BillingApiController) DepositMoney(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	form.AccountID = uuid.FromStringOrNil(r.Header.Get("X-User-Id"))
+	form.IdempotenceKey = r.Header.Get("If-Match")
 
 	result, err := c.service.DepositMoney(r.Context(), *form)
 	// If an error occured, encode the error with the status code
@@ -98,6 +100,7 @@ func (c *BillingApiController) WithdrawMoney(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	form.AccountID = uuid.FromStringOrNil(r.Header.Get("X-User-Id"))
+	form.IdempotenceKey = r.Header.Get("If-Match")
 
 	result, err := c.service.WithdrawMoney(r.Context(), *form)
 	// If an error occured, encode the error with the status code

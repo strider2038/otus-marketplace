@@ -32,7 +32,7 @@ type BillingApiRouter interface {
 // and updated with the logic required for the API.
 type BillingApiServicer interface {
 	DepositMoney(context.Context, BillingOperation) (ImplResponse, error)
-	GetBillingAccount(context.Context, uuid.UUID) (ImplResponse, error)
+	GetBillingAccount(context.Context, uuid.UUID) (ImplResponse, string, error)
 	GetBillingOperations(context.Context, uuid.UUID) (ImplResponse, error)
 	WithdrawMoney(context.Context, BillingOperation) (ImplResponse, error)
 }

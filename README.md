@@ -2,26 +2,41 @@
 
 Работа выполнена для курса ["Microservice architecture"](https://otus.ru/lessons/microservice-architecture/)
 
+## Описание проекта
+
+1. [Требования к системе](docs/01_requirements.md)
+2. [Проектирование микросервисной архитектуры на основе Event storming](docs/02_design.md)
+3. [Проектирование микросервиса сделок](docs/03_trading_design.md)
+4. [Спецификация OpenAPI](docs/public-api.yaml)
+5. [Спецификация AsyncAPI](docs/async-api.yaml)
+6. [Презентация по проекту](https://docs.google.com/presentation/d/1KrmSC7teapaxYjeN1FhxTqiPeEEtaix5PytTRu5WEwI/edit?usp=sharing)
+
 ## TODO
 
 * [x] добавить портфель и историю в схемы
 * [x] регистрация брокера
   * [x] user role
   * [x] user role in gateway
-* [ ] начисление комиссии брокера
+* [x] начисление комиссии брокера
   * [x] начислять комиссию
-  * [ ] идемпотентные методы
+  * [x] идемпотентные методы
+    * [x] пополнение
+    * [x] снятие
 * [ ] сервис торговой площадки
   * [x] код
   * [x] helm
   * [x] api gateway mapping
   * [ ] идемпотентные методы
+    * [ ] сделки на покупку
+    * [ ] сделки на продажу
 * [x] сервис статистики
 * [x] сервис истории сделок
 * [x] сервис уведомлений (сделки)
 * [ ] тесты
   * [x] trading
-  * [ ] negative cases (not enough money)
+  * [ ] negative cases 
+    * [ ] not enough money
+    * [x] billing idempotence
   * [x] notifications
   * [x] history
   * [x] stats
@@ -47,10 +62,12 @@ helm install aes datawire/ambassador -f deploy/ambassador-values.yaml
 # установка Apache Kafka
 helm install kafka bitnami/kafka -f deploy/kafka-values.yaml
 
-## запуск проекта
+# запуск микросервисов
 helm install --wait -f deploy/identity-values.yaml identity-service ./services/identity-service/deployments/identity-service --atomic
 helm install --wait -f deploy/billing-values.yaml billing-service ./services/billing-service/deployments/billing-service --atomic
-helm install --wait -f deploy/order-values.yaml order-service ./services/order-service/deployments/order-service --atomic
+helm install --wait -f deploy/trading-values.yaml trading-service ./services/trading-service/deployments/trading-service --atomic
+helm install --wait -f deploy/history-values.yaml history-service ./services/history-service/deployments/history-service --atomic
+helm install --wait -f deploy/statistics-values.yaml statistics-service ./services/statistics-service/deployments/statistics-service --atomic
 helm install --wait -f deploy/notification-values.yaml notification-service ./services/notification-service/deployments/notification-service --atomic
 
 # применение настроек ambassador

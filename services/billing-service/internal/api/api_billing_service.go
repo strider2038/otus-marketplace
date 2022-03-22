@@ -11,10 +11,15 @@ package api
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"net/http"
+	"strconv"
+	"time"
 
 	"billing-service/internal/billing"
 
+	"github.com/bsm/redislock"
 	"github.com/gofrs/uuid"
 	"github.com/muonsoft/validation"
 	"github.com/pkg/errors"
@@ -29,6 +34,8 @@ type BillingApiService struct {
 	operations         billing.OperationRepository
 	transactionManager persistence.TransactionManager
 	validator          *validation.Validator
+	locker             *redislock.Client
+	lockTimeout        time.Duration
 }
 
 // NewBillingApiService creates a default api service
@@ -37,23 +44,29 @@ func NewBillingApiService(
 	operations billing.OperationRepository,
 	transactionManager persistence.TransactionManager,
 	validator *validation.Validator,
+	locker *redislock.Client,
+	lockTimeout time.Duration,
 ) BillingApiServicer {
 	return &BillingApiService{
 		accounts:           accounts,
 		operations:         operations,
 		transactionManager: transactionManager,
 		validator:          validator,
+		locker:             locker,
+		lockTimeout:        lockTimeout,
 	}
 }
 
 // GetBillingAccount -
-func (s *BillingApiService) GetBillingAccount(ctx context.Context, id uuid.UUID) (ImplResponse, error) {
+func (s *BillingApiService) GetBillingAccount(ctx context.Context, id uuid.UUID) (ImplResponse, string, error) {
 	account, err := s.accounts.FindByID(ctx, id)
 	if err != nil {
-		return Response(http.StatusInternalServerError, nil), err
+		return Response(http.StatusInternalServerError, nil), "", err
 	}
 
-	return Response(http.StatusOK, account), nil
+	key := makeAccountIdempotenceKey(account)
+
+	return Response(http.StatusOK, account), key, nil
 }
 
 // DepositMoney -
@@ -61,16 +74,32 @@ func (s *BillingApiService) DepositMoney(ctx context.Context, operation BillingO
 	if operation.AccountID.IsNil() {
 		return newUnauthorizedResponse(), nil
 	}
+	if operation.IdempotenceKey == "" {
+		return newPreconditionRequiredResponse(), nil
+	}
 
 	err := s.validator.ValidateValidatable(ctx, operation)
 	if err != nil {
 		return newUnprocessableEntityResponse(err.Error()), nil
 	}
 
+	lock, err := s.locker.Obtain(ctx, operation.AccountID.String()+":deposit", s.lockTimeout, nil)
+	if errors.Is(err, redislock.ErrNotObtained) {
+		return newConflictResponse(), nil
+	}
+	if err != nil {
+		return newErrorResponsef(err, "failed to obtain lock")
+	}
+	defer lock.Release(ctx)
+
 	err = s.transactionManager.DoTransactionally(ctx, func(ctx context.Context) error {
 		account, err := s.accounts.FindByIDForUpdate(ctx, operation.AccountID)
 		if err != nil {
 			return errors.WithMessagef(err, "failed to find account %s", operation.AccountID)
+		}
+
+		if operation.IdempotenceKey != makeAccountIdempotenceKey(account) {
+			return errOutdated
 		}
 
 		account.Amount += operation.Amount
@@ -91,8 +120,11 @@ func (s *BillingApiService) DepositMoney(ctx context.Context, operation BillingO
 
 		return nil
 	})
+	if errors.Is(err, errOutdated) {
+		return newPreconditionFailedResponse(), nil
+	}
 	if err != nil {
-		return Response(http.StatusInternalServerError, nil), err
+		return newErrorResponsef(err, "failed to deposit")
 	}
 
 	return Response(http.StatusNoContent, nil), nil
@@ -103,16 +135,32 @@ func (s *BillingApiService) WithdrawMoney(ctx context.Context, operation Billing
 	if operation.AccountID.IsNil() {
 		return newUnauthorizedResponse(), nil
 	}
+	if operation.IdempotenceKey == "" {
+		return newPreconditionRequiredResponse(), nil
+	}
 
 	err := s.validator.ValidateValidatable(ctx, operation)
 	if err != nil {
 		return newUnprocessableEntityResponse(err.Error()), nil
 	}
 
+	lock, err := s.locker.Obtain(ctx, operation.AccountID.String()+":withdraw", s.lockTimeout, nil)
+	if errors.Is(err, redislock.ErrNotObtained) {
+		return newConflictResponse(), nil
+	}
+	if err != nil {
+		return newErrorResponsef(err, "failed to obtain lock")
+	}
+	defer lock.Release(ctx)
+
 	err = s.transactionManager.DoTransactionally(ctx, func(ctx context.Context) error {
 		account, err := s.accounts.FindByIDForUpdate(ctx, operation.AccountID)
 		if err != nil {
 			return errors.WithMessagef(err, "failed to find account %s", operation.AccountID)
+		}
+
+		if operation.IdempotenceKey != makeAccountIdempotenceKey(account) {
+			return errOutdated
 		}
 
 		account.Amount -= operation.Amount
@@ -136,14 +184,14 @@ func (s *BillingApiService) WithdrawMoney(ctx context.Context, operation Billing
 
 		return nil
 	})
+	if errors.Is(err, errOutdated) {
+		return newPreconditionFailedResponse(), nil
+	}
 	if errors.Is(err, billing.ErrNotEnoughMoney) {
-		return Response(http.StatusUnprocessableEntity, Error{
-			Code:    http.StatusUnprocessableEntity,
-			Message: "Not enough money on the account",
-		}), nil
+		return newUnprocessableEntityResponse("Not enough money on the account"), nil
 	}
 	if err != nil {
-		return Response(http.StatusInternalServerError, nil), err
+		return newErrorResponsef(err, "failed to withdraw")
 	}
 
 	return Response(http.StatusNoContent, nil), nil
@@ -157,8 +205,14 @@ func (s *BillingApiService) GetBillingOperations(ctx context.Context, accountID 
 
 	operations, err := s.operations.FindByAccount(ctx, accountID)
 	if err != nil {
-		return Response(http.StatusInternalServerError, nil), err
+		return newErrorResponsef(err, "failed to find account")
 	}
 
 	return Response(http.StatusOK, operations), nil
+}
+
+func makeAccountIdempotenceKey(account *billing.Account) string {
+	hash := sha256.Sum256([]byte(account.ID.String() + ":" + strconv.FormatInt(account.UpdatedAt.UnixNano(), 10)))
+
+	return hex.EncodeToString(hash[:])
 }

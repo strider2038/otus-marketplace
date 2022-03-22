@@ -48,6 +48,9 @@ secrets:
     producer:
       # Required in values.yaml.
       url: ""
+  redis:
+    # Required in values.yaml.
+    url: ""
 
 postgresql:
   enabled: true

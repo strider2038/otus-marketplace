@@ -8,6 +8,12 @@ postgresql:
   persistence:
     size: 1Gi
 
+redis:
+  auth:
+    enabled: false
+  replica:
+    replicaCount: 1
+
 secrets:
   brokerId: '2a104e66-1c78-4577-ab15-3ae935180c17'
   postgres:
@@ -18,3 +24,5 @@ secrets:
       url: "kafka.otus.svc.cluster.local:9092"
     producer:
       url: "kafka-0.kafka-headless.otus.svc.cluster.local:9092"
+  redis:
+    url: "billing-service-redis-master.otus.svc.cluster.local:6379"

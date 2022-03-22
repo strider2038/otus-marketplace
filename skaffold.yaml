@@ -89,13 +89,13 @@ deploy:
 #        valuesFiles:
 #          - "deploy/identity-values.yaml"
 
-#      - name: "billing-service"
-#        namespace: "otus"
-#        chartPath: "services/billing-service/deployments/billing-service"
-#        wait: true
-#        valuesFiles:
-#          - "deploy/billing-values.yaml"
-#
+      - name: "billing-service"
+        namespace: "otus"
+        chartPath: "services/billing-service/deployments/billing-service"
+        wait: true
+        valuesFiles:
+          - "deploy/billing-values.yaml"
+
 #      - name: "trading-service"
 #        namespace: "otus"
 #        chartPath: "services/trading-service/deployments/trading-service"
@@ -109,14 +109,14 @@ deploy:
 #        wait: true
 #        valuesFiles:
 #          - "deploy/history-values.yaml"
-
-      - name: "statistics-service"
-        namespace: "otus"
-        chartPath: "services/statistics-service/deployments/statistics-service"
-        wait: true
-        valuesFiles:
-          - "deploy/statistics-values.yaml"
-
+#
+#      - name: "statistics-service"
+#        namespace: "otus"
+#        chartPath: "services/statistics-service/deployments/statistics-service"
+#        wait: true
+#        valuesFiles:
+#          - "deploy/statistics-values.yaml"
+#
 #      - name: "notification-service"
 #        namespace: "otus"
 #        chartPath: "services/notification-service/deployments/notification-service"

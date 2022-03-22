@@ -87,3 +87,9 @@ Application secrets
 {{- printf "%s" .url | b64enc }}
 {{- end }}
 {{- end }}
+
+{{- define "redisUrl" }}
+{{- with .Values.secrets.redis }}
+{{- printf "%s" .url | b64enc }}
+{{- end }}
+{{- end }}

@@ -18,8 +18,9 @@ import (
 )
 
 type BillingOperation struct {
-	AccountID uuid.UUID
-	Amount    float64 `json:"amount"`
+	AccountID      uuid.UUID `json:"-"`
+	IdempotenceKey string    `json:"-"`
+	Amount         float64   `json:"amount"`
 }
 
 func (operation BillingOperation) Validate(ctx context.Context, validator *validation.Validator) error {
