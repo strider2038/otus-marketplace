@@ -88,21 +88,21 @@ deploy:
 #        wait: true
 #        valuesFiles:
 #          - "deploy/identity-values.yaml"
-
-      - name: "billing-service"
-        namespace: "otus"
-        chartPath: "services/billing-service/deployments/billing-service"
-        wait: true
-        valuesFiles:
-          - "deploy/billing-values.yaml"
-
-#      - name: "trading-service"
+#
+#      - name: "billing-service"
 #        namespace: "otus"
-#        chartPath: "services/trading-service/deployments/trading-service"
+#        chartPath: "services/billing-service/deployments/billing-service"
 #        wait: true
 #        valuesFiles:
-#          - "deploy/trading-values.yaml"
+#          - "deploy/billing-values.yaml"
 #
+      - name: "trading-service"
+        namespace: "otus"
+        chartPath: "services/trading-service/deployments/trading-service"
+        wait: true
+        valuesFiles:
+          - "deploy/trading-values.yaml"
+
 #      - name: "history-service"
 #        namespace: "otus"
 #        chartPath: "services/history-service/deployments/history-service"

@@ -372,7 +372,7 @@ WHERE item_id = $1
   AND price <= $2
   AND user_id != $3
 ORDER BY price DESC
-LIMIT 1 FOR UPDATE
+LIMIT 1 FOR UPDATE SKIP LOCKED
 `
 
 type FindPurchaseOrderForDealParams struct {
@@ -605,7 +605,7 @@ WHERE item_id = $1
   AND price <= $2
   AND user_id != $3
 ORDER BY price DESC
-LIMIT 1 FOR UPDATE
+LIMIT 1 FOR UPDATE SKIP LOCKED
 `
 
 type FindSellOrderForDealParams struct {
@@ -761,6 +761,32 @@ func (q *Queries) FindUserItemForSale(ctx context.Context, userID uuid.UUID) (Us
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const getPurchaseOrdersStateOfUser = `-- name: GetPurchaseOrdersStateOfUser :one
+SELECT COALESCE(max(updated_at)::text, '')::text
+FROM purchase_order
+WHERE user_id = $1
+`
+
+func (q *Queries) GetPurchaseOrdersStateOfUser(ctx context.Context, userID uuid.UUID) (string, error) {
+	row := q.db.QueryRow(ctx, getPurchaseOrdersStateOfUser, userID)
+	var column_1 string
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const getSellOrdersStateOfUser = `-- name: GetSellOrdersStateOfUser :one
+SELECT COALESCE(max(updated_at)::text, '')::text
+FROM sell_order
+WHERE user_id = $1
+`
+
+func (q *Queries) GetSellOrdersStateOfUser(ctx context.Context, userID uuid.UUID) (string, error) {
+	row := q.db.QueryRow(ctx, getSellOrdersStateOfUser, userID)
+	var column_1 string
+	err := row.Scan(&column_1)
+	return column_1, err
 }
 
 const updatePurchaseOrder = `-- name: UpdatePurchaseOrder :exec

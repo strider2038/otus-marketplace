@@ -41,8 +41,8 @@ type TradingApiServicer interface {
 	CreatePurchaseOrder(context.Context, PurchaseOrder) (ImplResponse, error)
 	CreateSellOrder(context.Context, SellOrder) (ImplResponse, error)
 	CreateTradingItem(context.Context, TradingItem) (ImplResponse, error)
-	GetPurchaseOrders(context.Context, uuid.UUID) (ImplResponse, error)
-	GetSellOrders(context.Context, uuid.UUID) (ImplResponse, error)
+	GetPurchaseOrders(context.Context, uuid.UUID) (ImplResponse, string, error)
+	GetSellOrders(context.Context, uuid.UUID) (ImplResponse, string, error)
 	GetTradingItems(context.Context) (ImplResponse, error)
 	GetUserItems(context.Context, uuid.UUID) (ImplResponse, error)
 }

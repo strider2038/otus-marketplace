@@ -148,4 +148,5 @@ type SellOrderRepository interface {
 	FindForDeal(ctx context.Context, userID, itemID uuid.UUID, maxPrice float64) (*SellOrder, error)
 	Save(ctx context.Context, order *SellOrder) error
 	Delete(ctx context.Context, id uuid.UUID) error
+	GetStateByUser(ctx context.Context, userID uuid.UUID) (string, error)
 }

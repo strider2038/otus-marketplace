@@ -29,4 +29,10 @@ dependencies:
     repository: https://charts.bitnami.com/bitnami
     condition: postgresql.enabled
     tags:
-      - billing-database
+      - trading-database
+  - name: redis
+    version: ^16
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled
+    tags:
+      - trading-cache

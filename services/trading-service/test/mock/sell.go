@@ -95,6 +95,10 @@ func (repository *SellOrderRepository) Delete(ctx context.Context, id uuid.UUID)
 	return nil
 }
 
+func (repository *SellOrderRepository) GetStateByUser(ctx context.Context, userID uuid.UUID) (string, error) {
+	return "test", nil
+}
+
 func (repository *SellOrderRepository) Set(orders ...*trading.SellOrder) {
 	for _, order := range orders {
 		repository.orders[order.ID] = order

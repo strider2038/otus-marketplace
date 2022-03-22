@@ -11,11 +11,15 @@ package api
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"net/http"
+	"time"
 
 	"trading-service/internal/messaging"
 	"trading-service/internal/trading"
 
+	"github.com/bsm/redislock"
 	"github.com/gofrs/uuid"
 	"github.com/muonsoft/validation"
 	"github.com/pkg/errors"
@@ -35,6 +39,8 @@ type TradingApiService struct {
 	dealer              *trading.Dealer
 	dispatcher          messaging.Dispatcher
 	validator           *validation.Validator
+	locker              Locker
+	lockTimeout         time.Duration
 }
 
 // NewTradingApiService creates a default api service
@@ -47,6 +53,8 @@ func NewTradingApiService(
 	transactionManager persistence.TransactionManager,
 	dealer *trading.Dealer,
 	validator *validation.Validator,
+	locker Locker,
+	lockTimeout time.Duration,
 ) TradingApiServicer {
 	return &TradingApiService{
 		purchaseOrders:      purchaseOrders,
@@ -57,6 +65,8 @@ func NewTradingApiService(
 		transactionManager:  transactionManager,
 		dealer:              dealer,
 		validator:           validator,
+		locker:              locker,
+		lockTimeout:         lockTimeout,
 	}
 }
 
@@ -65,9 +75,29 @@ func (s *TradingApiService) CreatePurchaseOrder(ctx context.Context, form Purcha
 	if form.UserID.IsNil() {
 		return newUnauthorizedResponse(), nil
 	}
+	if form.IdempotenceKey == "" {
+		return newPreconditionRequiredResponse(), nil
+	}
 	err := s.validator.ValidateValidatable(ctx, form)
 	if err != nil {
 		return newUnprocessableEntityResponse(err.Error()), nil
+	}
+
+	lock, err := s.locker.Obtain(ctx, form.UserID.String()+":create-purchase-order", s.lockTimeout)
+	if errors.Is(err, redislock.ErrNotObtained) {
+		return newConflictResponse(), nil
+	}
+	if err != nil {
+		return newErrorResponsef(err, "failed to obtain lock")
+	}
+	defer lock.Release(ctx)
+
+	err = s.verifyPurchaseIdempotenceKey(ctx, form.UserID, form.IdempotenceKey)
+	if errors.Is(err, errOutdated) {
+		return newPreconditionFailedResponse(), nil
+	}
+	if err != nil {
+		return newErrorResponsef(err, "failed to verify idempotence key")
 	}
 
 	item, err := s.items.FindByID(ctx, form.ItemID)
@@ -134,9 +164,29 @@ func (s *TradingApiService) CreateSellOrder(ctx context.Context, form SellOrder)
 	if form.UserID.IsNil() {
 		return newUnauthorizedResponse(), nil
 	}
+	if form.IdempotenceKey == "" {
+		return newPreconditionRequiredResponse(), nil
+	}
 	err := s.validator.ValidateValidatable(ctx, form)
 	if err != nil {
 		return newUnprocessableEntityResponse(err.Error()), nil
+	}
+
+	lock, err := s.locker.Obtain(ctx, form.UserID.String()+":create-sell-order", s.lockTimeout)
+	if errors.Is(err, redislock.ErrNotObtained) {
+		return newConflictResponse(), nil
+	}
+	if err != nil {
+		return newErrorResponsef(err, "failed to obtain lock")
+	}
+	defer lock.Release(ctx)
+
+	err = s.verifySellIdempotenceKey(ctx, form.UserID, form.IdempotenceKey)
+	if errors.Is(err, errOutdated) {
+		return newPreconditionFailedResponse(), nil
+	}
+	if err != nil {
+		return newErrorResponsef(err, "failed to verify idempotence key")
 	}
 
 	item, err := s.items.FindByID(ctx, form.ItemID)
@@ -201,31 +251,41 @@ func (s *TradingApiService) CancelSellOrder(ctx context.Context, userID, orderID
 }
 
 // GetPurchaseOrders -
-func (s *TradingApiService) GetPurchaseOrders(ctx context.Context, userID uuid.UUID) (ImplResponse, error) {
+func (s *TradingApiService) GetPurchaseOrders(ctx context.Context, userID uuid.UUID) (ImplResponse, string, error) {
 	if userID.IsNil() {
-		return newUnauthorizedResponse(), nil
+		return newUnauthorizedResponse(), "", nil
 	}
 
 	orders, err := s.purchaseOrders.FindByUser(ctx, userID)
 	if err != nil {
-		return Response(http.StatusInternalServerError, nil), err
+		return Response(http.StatusInternalServerError, nil), "", err
 	}
 
-	return Response(http.StatusOK, orders), nil
+	key, err := s.getPurchaseIdempotenceKey(ctx, userID)
+	if err != nil {
+		return Response(http.StatusInternalServerError, nil), "", err
+	}
+
+	return Response(http.StatusOK, orders), key, nil
 }
 
 // GetSellOrders -
-func (s *TradingApiService) GetSellOrders(ctx context.Context, userID uuid.UUID) (ImplResponse, error) {
+func (s *TradingApiService) GetSellOrders(ctx context.Context, userID uuid.UUID) (ImplResponse, string, error) {
 	if userID.IsNil() {
-		return newUnauthorizedResponse(), nil
+		return newUnauthorizedResponse(), "", nil
 	}
 
 	orders, err := s.sellOrders.FindByUser(ctx, userID)
 	if err != nil {
-		return Response(http.StatusInternalServerError, nil), err
+		return Response(http.StatusInternalServerError, nil), "", err
 	}
 
-	return Response(http.StatusOK, orders), nil
+	key, err := s.getSellIdempotenceKey(ctx, userID)
+	if err != nil {
+		return Response(http.StatusInternalServerError, nil), "", err
+	}
+
+	return Response(http.StatusOK, orders), key, nil
 }
 
 // GetTradingItems -
@@ -293,4 +353,50 @@ func (s *TradingApiService) GetUserItems(ctx context.Context, userID uuid.UUID) 
 	}
 
 	return Response(http.StatusOK, items), nil
+}
+
+func (s *TradingApiService) getPurchaseIdempotenceKey(ctx context.Context, userID uuid.UUID) (string, error) {
+	state, err := s.purchaseOrders.GetStateByUser(ctx, userID)
+	if err != nil {
+		return "", err
+	}
+
+	hash := sha256.Sum256([]byte(userID.String() + ":purchase:" + state))
+
+	return hex.EncodeToString(hash[:]), nil
+}
+
+func (s *TradingApiService) getSellIdempotenceKey(ctx context.Context, userID uuid.UUID) (string, error) {
+	state, err := s.sellOrders.GetStateByUser(ctx, userID)
+	if err != nil {
+		return "", err
+	}
+
+	hash := sha256.Sum256([]byte(userID.String() + ":sell:" + state))
+
+	return hex.EncodeToString(hash[:]), nil
+}
+
+func (s *TradingApiService) verifyPurchaseIdempotenceKey(ctx context.Context, userID uuid.UUID, key string) error {
+	actualKey, err := s.getPurchaseIdempotenceKey(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if actualKey != key {
+		return errors.WithStack(errOutdated)
+	}
+
+	return nil
+}
+
+func (s *TradingApiService) verifySellIdempotenceKey(ctx context.Context, userID uuid.UUID, key string) error {
+	actualKey, err := s.getSellIdempotenceKey(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if actualKey != key {
+		return errors.WithStack(errOutdated)
+	}
+
+	return nil
 }

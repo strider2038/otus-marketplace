@@ -34,6 +34,7 @@ func (suite *APISuite) TestCreateSellOrder_WhenInvalidForm_ExpectValidationError
 			"price": 0
 		}`),
 		apitest.WithHeader("X-User-Id", userID.String()),
+		apitest.WithHeader("If-Match", getPurchaseIdempotenceKey(userID)),
 	)
 
 	response.IsUnprocessableEntity()
@@ -52,6 +53,7 @@ func (suite *APISuite) TestCreateSellOrder_WhenItemDoesNotExist_ExpectValidation
 			"price": 100
 		}`),
 		apitest.WithHeader("X-User-Id", userID.String()),
+		apitest.WithHeader("If-Match", getSellIdempotenceKey(userID)),
 	)
 
 	response.IsUnprocessableEntity()
@@ -85,6 +87,7 @@ func (suite *APISuite) TestCreateSellOrder_WhenNoPurchaseOrderFound_ExpectPendin
 			"price": 100
 		}`),
 		apitest.WithHeader("X-User-Id", sellerID.String()),
+		apitest.WithHeader("If-Match", getSellIdempotenceKey(sellerID)),
 	)
 
 	response.IsAccepted()
@@ -128,6 +131,7 @@ func (suite *APISuite) TestCreateSellOrder_WhenInitialSellOrderFound_ExpectDealI
 			"price": 120
 		}`),
 		apitest.WithHeader("X-User-Id", sellerID.String()),
+		apitest.WithHeader("If-Match", getSellIdempotenceKey(sellerID)),
 	)
 
 	response.IsAccepted()

@@ -18,9 +18,10 @@ import (
 )
 
 type SellOrder struct {
-	ItemID uuid.UUID `json:"itemId,omitempty"`
-	UserID uuid.UUID `json:"-"`
-	Price  float64   `json:"price"`
+	ItemID         uuid.UUID `json:"itemId,omitempty"`
+	UserID         uuid.UUID `json:"-"`
+	Price          float64   `json:"price"`
+	IdempotenceKey string    `json:"-"`
 }
 
 func (order SellOrder) Validate(ctx context.Context, validator *validation.Validator) error {

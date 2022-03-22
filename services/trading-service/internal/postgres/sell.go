@@ -150,6 +150,15 @@ func (repository *SellOrderRepository) update(ctx context.Context, order *tradin
 	return nil
 }
 
+func (repository *SellOrderRepository) GetStateByUser(ctx context.Context, userID uuid.UUID) (string, error) {
+	state, err := queries(ctx, repository.conn).GetSellOrdersStateOfUser(ctx, userID)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get sell orders state")
+	}
+
+	return state, nil
+}
+
 func sellOrderFromRow(row database.SellOrder) *trading.SellOrder {
 	return &trading.SellOrder{
 		ID:         row.ID,

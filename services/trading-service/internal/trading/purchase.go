@@ -134,4 +134,5 @@ type PurchaseOrderRepository interface {
 	FindForDeal(ctx context.Context, userID, itemID uuid.UUID, minPrice float64) (*PurchaseOrder, error)
 	Save(ctx context.Context, order *PurchaseOrder) error
 	Delete(ctx context.Context, id uuid.UUID) error
+	GetStateByUser(ctx context.Context, userID uuid.UUID) (string, error)
 }

@@ -130,6 +130,7 @@ func (c *TradingApiController) CreatePurchaseOrder(w http.ResponseWriter, r *htt
 		return
 	}
 	purchaseOrder.UserID = uuid.FromStringOrNil(r.Header.Get("X-User-Id"))
+	purchaseOrder.IdempotenceKey = r.Header.Get("If-Match")
 
 	result, err := c.service.CreatePurchaseOrder(r.Context(), *purchaseOrder)
 	// If an error occured, encode the error with the status code
@@ -151,6 +152,7 @@ func (c *TradingApiController) CreateSellOrder(w http.ResponseWriter, r *http.Re
 	}
 
 	sellOrder.UserID = uuid.FromStringOrNil(r.Header.Get("X-User-Id"))
+	sellOrder.IdempotenceKey = r.Header.Get("If-Match")
 
 	result, err := c.service.CreateSellOrder(r.Context(), *sellOrder)
 	// If an error occured, encode the error with the status code
@@ -188,13 +190,14 @@ func (c *TradingApiController) CreateTradingItem(w http.ResponseWriter, r *http.
 func (c *TradingApiController) GetPurchaseOrders(w http.ResponseWriter, r *http.Request) {
 	userID := uuid.FromStringOrNil(r.Header.Get("X-User-Id"))
 
-	result, err := c.service.GetPurchaseOrders(r.Context(), userID)
+	result, eTag, err := c.service.GetPurchaseOrders(r.Context(), userID)
 	// If an error occured, encode the error with the status code
 	if err != nil {
 		EncodeJSONResponse(err.Error(), &result.Code, w)
 		return
 	}
 	// If no error, encode the body and the result code
+	w.Header().Set("ETag", eTag)
 	EncodeJSONResponse(result.Body, &result.Code, w)
 
 }
@@ -203,13 +206,14 @@ func (c *TradingApiController) GetPurchaseOrders(w http.ResponseWriter, r *http.
 func (c *TradingApiController) GetSellOrders(w http.ResponseWriter, r *http.Request) {
 	userID := uuid.FromStringOrNil(r.Header.Get("X-User-Id"))
 
-	result, err := c.service.GetSellOrders(r.Context(), userID)
+	result, eTag, err := c.service.GetSellOrders(r.Context(), userID)
 	// If an error occured, encode the error with the status code
 	if err != nil {
 		EncodeJSONResponse(err.Error(), &result.Code, w)
 		return
 	}
 	// If no error, encode the body and the result code
+	w.Header().Set("ETag", eTag)
 	EncodeJSONResponse(result.Body, &result.Code, w)
 
 }

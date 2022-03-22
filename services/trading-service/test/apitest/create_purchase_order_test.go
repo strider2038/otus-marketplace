@@ -34,6 +34,7 @@ func (suite *APISuite) TestCreatePurchaseOrder_WhenInvalidForm_ExpectValidationE
 			"price": 0
 		}`),
 		apitest.WithHeader("X-User-Id", userID.String()),
+		apitest.WithHeader("If-Match", getPurchaseIdempotenceKey(userID)),
 	)
 
 	response.IsUnprocessableEntity()
@@ -52,6 +53,7 @@ func (suite *APISuite) TestCreatePurchaseOrder_WhenItemDoesNotExist_ExpectValida
 			"price": 100
 		}`),
 		apitest.WithHeader("X-User-Id", userID.String()),
+		apitest.WithHeader("If-Match", getPurchaseIdempotenceKey(userID)),
 	)
 
 	response.IsUnprocessableEntity()
@@ -80,6 +82,7 @@ func (suite *APISuite) TestCreatePurchaseOrder_WhenItemNoSellOrderFound_ExpectPe
 			"price": 100
 		}`),
 		apitest.WithHeader("X-User-Id", userID.String()),
+		apitest.WithHeader("If-Match", getPurchaseIdempotenceKey(userID)),
 	)
 
 	response.IsAccepted()
@@ -119,6 +122,7 @@ func (suite *APISuite) TestCreatePurchaseOrder_WhenInitialSellOrderFound_ExpectD
 			"price": 120
 		}`),
 		apitest.WithHeader("X-User-Id", purchaserID.String()),
+		apitest.WithHeader("If-Match", getPurchaseIdempotenceKey(purchaserID)),
 	)
 
 	response.IsAccepted()

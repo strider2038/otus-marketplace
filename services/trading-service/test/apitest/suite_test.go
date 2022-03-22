@@ -1,6 +1,8 @@
 package apitest
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"net/http"
 	"testing"
 
@@ -70,6 +72,8 @@ func (suite *APISuite) SetupTest() {
 		transactionManager,
 		dealer,
 		validator,
+		mock.Locker{},
+		0,
 	)
 	controller := api.NewTradingApiController(service)
 	suite.api = api.NewRouter(controller)
@@ -81,4 +85,16 @@ func TestAPISuite(t *testing.T) {
 
 func (suite *APISuite) GivenInitialOrder(item *trading.Item, userItem *trading.UserItem) *trading.SellOrder {
 	return trading.NewInitialOrder(brokerID, item, userItem)
+}
+
+func getPurchaseIdempotenceKey(userID uuid.UUID) string {
+	hash := sha256.Sum256([]byte(userID.String() + ":purchase:test"))
+
+	return hex.EncodeToString(hash[:])
+}
+
+func getSellIdempotenceKey(userID uuid.UUID) string {
+	hash := sha256.Sum256([]byte(userID.String() + ":sell:test"))
+
+	return hex.EncodeToString(hash[:])
 }

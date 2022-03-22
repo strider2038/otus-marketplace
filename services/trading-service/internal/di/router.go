@@ -22,6 +22,8 @@ func NewAPIRouter(c *Container) http.Handler {
 		c.txManager,
 		c.dealer,
 		c.validator,
+		c.locker,
+		c.config.LockTimeout,
 	)
 	apiController := api.NewTradingApiController(apiService)
 
@@ -31,7 +33,7 @@ func NewAPIRouter(c *Container) http.Handler {
 		return api.MetricsMiddleware(handler, metrics)
 	})
 
-	router := NewRouter(c.connection, c.config)
+	router := NewRouter(c.dbConnection, c.config)
 	router.PathPrefix("/api").Handler(apiRouter)
 	router.Handle("/metrics", promhttp.Handler())
 

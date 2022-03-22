@@ -149,6 +149,15 @@ func (repository *PurchaseOrderRepository) update(ctx context.Context, order *tr
 	return nil
 }
 
+func (repository *PurchaseOrderRepository) GetStateByUser(ctx context.Context, userID uuid.UUID) (string, error) {
+	state, err := queries(ctx, repository.conn).GetPurchaseOrdersStateOfUser(ctx, userID)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get purchase orders state")
+	}
+
+	return state, nil
+}
+
 func purchaseOrderFromRow(row database.PurchaseOrder) *trading.PurchaseOrder {
 	return &trading.PurchaseOrder{
 		ID:         row.ID,

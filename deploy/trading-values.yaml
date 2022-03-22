@@ -23,5 +23,5 @@ secrets:
       url: "kafka.otus.svc.cluster.local:9092"
     producer:
       url: "kafka-0.kafka-headless.otus.svc.cluster.local:9092"
-#  redis:
-#    url: "trading-service-redis-master.otus.svc.cluster.local:6379"
+  redis:
+    url: "trading-service-redis-master.otus.svc.cluster.local:6379"

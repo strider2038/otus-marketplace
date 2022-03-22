@@ -143,7 +143,12 @@ WHERE item_id = $1
   AND price <= $2
   AND user_id != $3
 ORDER BY price DESC
-LIMIT 1 FOR UPDATE;
+LIMIT 1 FOR UPDATE SKIP LOCKED;
+
+-- name: GetPurchaseOrdersStateOfUser :one
+SELECT COALESCE(max(updated_at)::text, '')::text
+FROM purchase_order
+WHERE user_id = $1;
 
 -- name: CreatePurchaseOrder :exec
 INSERT INTO "purchase_order" (id, user_id, item_id, payment_id, deal_id, price, commission, status, created_at,
@@ -260,7 +265,12 @@ WHERE item_id = $1
   AND price <= $2
   AND user_id != $3
 ORDER BY price DESC
-LIMIT 1 FOR UPDATE;
+LIMIT 1 FOR UPDATE SKIP LOCKED;
+
+-- name: GetSellOrdersStateOfUser :one
+SELECT COALESCE(max(updated_at)::text, '')::text
+FROM sell_order
+WHERE user_id = $1;
 
 -- name: CreateSellOrder :exec
 INSERT INTO "sell_order" (id, user_id, item_id, user_item_id, accrual_id, deal_id, price, commission, status, created_at, updated_at)
