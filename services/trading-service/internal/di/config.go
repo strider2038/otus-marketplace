@@ -8,8 +8,9 @@ type Config struct {
 	KafkaProducerURL string `env:"KAFKA_PRODUCER_URL" env-required:"true"`
 	RedisURL         string `env:"REDIS_URL" env-required:"true"`
 
-	Environment string `env:"APP_ENV" env-default:"unknown"`
-	Version     string
-	Port        int `env:"PORT" env-default:"8000"`
-	LockTimeout time.Duration
+	Environment  string `env:"APP_ENV" env-default:"unknown"`
+	Version      string
+	Port         int `env:"PORT" env-default:"8000"`
+	LockTimeout  time.Duration
+	StateTimeout time.Duration
 }

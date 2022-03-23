@@ -42,6 +42,8 @@ type Container struct {
 	tradingAdapter          *messaging.TradingAdapter
 	dealer                  *trading.Dealer
 	validator               *validation.Validator
+	purchaseState           *redisadapter.StateRepository
+	sellState               *redisadapter.StateRepository
 }
 
 func NewContainer(config Config) (*Container, error) {
@@ -109,6 +111,10 @@ func NewContainer(config Config) (*Container, error) {
 		c.billingAdapter,
 		c.tradingAdapter,
 	)
+
+	c.sellState = redisadapter.NewStateRepository("sell", c.redisConnection, c.config.StateTimeout)
+	c.purchaseState = redisadapter.NewStateRepository("purchase", c.redisConnection, c.config.StateTimeout)
+
 	c.validator, err = validation.NewValidator()
 	if err != nil {
 		return nil, err

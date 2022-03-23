@@ -9,12 +9,7 @@
 
 package api
 
-import "github.com/pkg/errors"
-
-var errOutdated = errors.New("outdated")
-
 type Error struct {
-	Code int32 `json:"code"`
-
+	Code    int32  `json:"code"`
 	Message string `json:"message"`
 }

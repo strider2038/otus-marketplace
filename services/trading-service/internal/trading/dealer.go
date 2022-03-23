@@ -120,6 +120,12 @@ func (dealer *Dealer) createSellOrder(ctx context.Context, item *Item, userID uu
 			return nil, errors.WithMessagef(err, "failed to save sell order of user %s", sellOrder.UserID)
 		}
 
+		userItem.IsOnSale = true
+		err = dealer.userItems.Save(ctx, userItem)
+		if err != nil {
+			return nil, errors.WithMessage(err, "failed to save user item")
+		}
+
 		return sellOrder, nil
 	}
 	if err != nil {

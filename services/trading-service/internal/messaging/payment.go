@@ -79,13 +79,19 @@ func NewPaymentDeclinedProcessor(dealer *trading.Dealer) *PaymentDeclinedProcess
 }
 
 func (p *PaymentDeclinedProcessor) Process(ctx context.Context, message []byte) error {
-	var payment PaymentDeclined
-	err := json.Unmarshal(message, &payment)
+	var event PaymentDeclined
+	err := json.Unmarshal(message, &event)
 	if err != nil {
 		return errors.Wrap(err, "failed to unmarshal PaymentDeclined message")
 	}
 
-	err = p.dealer.DeclinePayment(ctx, &trading.Payment{ID: payment.ID}, payment.Reason)
+	payment := &trading.Payment{
+		ID:         event.ID,
+		Amount:     event.Amount,
+		Commission: event.Commission,
+	}
+
+	err = p.dealer.DeclinePayment(ctx, payment, event.Reason)
 	if err != nil {
 		return errors.WithMessage(err, "failed to process PaymentDeclined message")
 	}

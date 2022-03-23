@@ -11,12 +11,9 @@ package api
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"net/http"
 	"time"
 
-	"trading-service/internal/messaging"
 	"trading-service/internal/trading"
 
 	"github.com/bsm/redislock"
@@ -37,8 +34,9 @@ type TradingApiService struct {
 	aggregatedUserItems trading.AggregatedUserItemRepository
 	transactionManager  persistence.TransactionManager
 	dealer              *trading.Dealer
-	dispatcher          messaging.Dispatcher
 	validator           *validation.Validator
+	purchaseState       StateRepository
+	sellState           StateRepository
 	locker              Locker
 	lockTimeout         time.Duration
 }
@@ -53,6 +51,8 @@ func NewTradingApiService(
 	transactionManager persistence.TransactionManager,
 	dealer *trading.Dealer,
 	validator *validation.Validator,
+	purchaseState StateRepository,
+	sellState StateRepository,
 	locker Locker,
 	lockTimeout time.Duration,
 ) TradingApiServicer {
@@ -65,9 +65,34 @@ func NewTradingApiService(
 		transactionManager:  transactionManager,
 		dealer:              dealer,
 		validator:           validator,
+		purchaseState:       purchaseState,
+		sellState:           sellState,
 		locker:              locker,
 		lockTimeout:         lockTimeout,
 	}
+}
+
+// GetPurchaseOrders -
+func (s *TradingApiService) GetPurchaseOrders(ctx context.Context, userID uuid.UUID) (ImplResponse, string, error) {
+	if userID.IsNil() {
+		return newUnauthorizedResponse(), "", nil
+	}
+
+	orders, err := s.purchaseOrders.FindByUser(ctx, userID)
+	if err != nil {
+		return Response(http.StatusInternalServerError, nil), "", err
+	}
+
+	state, err := s.purchaseState.Get(ctx, userID)
+	if err != nil {
+		return Response(http.StatusInternalServerError, nil), "", errors.WithMessagef(
+			err,
+			`failed to get purchase state of user "%s"`,
+			userID,
+		)
+	}
+
+	return Response(http.StatusOK, orders), state, nil
 }
 
 // CreatePurchaseOrder -
@@ -92,8 +117,8 @@ func (s *TradingApiService) CreatePurchaseOrder(ctx context.Context, form Purcha
 	}
 	defer lock.Release(ctx)
 
-	err = s.verifyPurchaseIdempotenceKey(ctx, form.UserID, form.IdempotenceKey)
-	if errors.Is(err, errOutdated) {
+	err = s.purchaseState.Verify(ctx, form.UserID, form.IdempotenceKey)
+	if errors.Is(err, trading.ErrOutdated) {
 		return newPreconditionFailedResponse(), nil
 	}
 	if err != nil {
@@ -105,13 +130,18 @@ func (s *TradingApiService) CreatePurchaseOrder(ctx context.Context, form Purcha
 		return newUnprocessableEntityResponse("trading item does not exist"), nil
 	}
 	if err != nil {
-		return Response(http.StatusInternalServerError, nil), err
+		return newErrorResponsef(err, "failed to create purchase order")
 	}
 
 	order := trading.NewPurchaseOrder(form.UserID, item, form.Price)
 	err = s.dealer.CreatePurchaseOrder(ctx, item, order)
 	if err != nil {
-		return Response(http.StatusInternalServerError, nil), err
+		return newErrorResponsef(err, "failed to create purchase order")
+	}
+
+	err = s.purchaseState.Refresh(ctx, form.UserID)
+	if err != nil {
+		return newErrorResponsef(err, `failed to refresh purchase state of user "%s"`, form.UserID)
 	}
 
 	return Response(http.StatusAccepted, order), nil
@@ -159,6 +189,29 @@ func (s *TradingApiService) CancelPurchaseOrder(ctx context.Context, userID, ord
 	return Response(http.StatusOK, order), nil
 }
 
+// GetSellOrders -
+func (s *TradingApiService) GetSellOrders(ctx context.Context, userID uuid.UUID) (ImplResponse, string, error) {
+	if userID.IsNil() {
+		return newUnauthorizedResponse(), "", nil
+	}
+
+	orders, err := s.sellOrders.FindByUser(ctx, userID)
+	if err != nil {
+		return Response(http.StatusInternalServerError, nil), "", err
+	}
+
+	state, err := s.sellState.Get(ctx, userID)
+	if err != nil {
+		return Response(http.StatusInternalServerError, nil), "", errors.WithMessagef(
+			err,
+			`failed to get sell state of user "%s"`,
+			userID,
+		)
+	}
+
+	return Response(http.StatusOK, orders), state, nil
+}
+
 // CreateSellOrder -
 func (s *TradingApiService) CreateSellOrder(ctx context.Context, form SellOrder) (ImplResponse, error) {
 	if form.UserID.IsNil() {
@@ -181,8 +234,8 @@ func (s *TradingApiService) CreateSellOrder(ctx context.Context, form SellOrder)
 	}
 	defer lock.Release(ctx)
 
-	err = s.verifySellIdempotenceKey(ctx, form.UserID, form.IdempotenceKey)
-	if errors.Is(err, errOutdated) {
+	err = s.sellState.Verify(ctx, form.UserID, form.IdempotenceKey)
+	if errors.Is(err, trading.ErrOutdated) {
 		return newPreconditionFailedResponse(), nil
 	}
 	if err != nil {
@@ -203,6 +256,11 @@ func (s *TradingApiService) CreateSellOrder(ctx context.Context, form SellOrder)
 	}
 	if err != nil {
 		return Response(http.StatusInternalServerError, nil), err
+	}
+
+	err = s.sellState.Refresh(ctx, form.UserID)
+	if err != nil {
+		return newErrorResponsef(err, `failed to refresh sell state of user "%s"`, form.UserID)
 	}
 
 	return Response(http.StatusAccepted, sellOrder), nil
@@ -248,44 +306,6 @@ func (s *TradingApiService) CancelSellOrder(ctx context.Context, userID, orderID
 	}
 
 	return Response(http.StatusOK, order), nil
-}
-
-// GetPurchaseOrders -
-func (s *TradingApiService) GetPurchaseOrders(ctx context.Context, userID uuid.UUID) (ImplResponse, string, error) {
-	if userID.IsNil() {
-		return newUnauthorizedResponse(), "", nil
-	}
-
-	orders, err := s.purchaseOrders.FindByUser(ctx, userID)
-	if err != nil {
-		return Response(http.StatusInternalServerError, nil), "", err
-	}
-
-	key, err := s.getPurchaseIdempotenceKey(ctx, userID)
-	if err != nil {
-		return Response(http.StatusInternalServerError, nil), "", err
-	}
-
-	return Response(http.StatusOK, orders), key, nil
-}
-
-// GetSellOrders -
-func (s *TradingApiService) GetSellOrders(ctx context.Context, userID uuid.UUID) (ImplResponse, string, error) {
-	if userID.IsNil() {
-		return newUnauthorizedResponse(), "", nil
-	}
-
-	orders, err := s.sellOrders.FindByUser(ctx, userID)
-	if err != nil {
-		return Response(http.StatusInternalServerError, nil), "", err
-	}
-
-	key, err := s.getSellIdempotenceKey(ctx, userID)
-	if err != nil {
-		return Response(http.StatusInternalServerError, nil), "", err
-	}
-
-	return Response(http.StatusOK, orders), key, nil
 }
 
 // GetTradingItems -
@@ -353,50 +373,4 @@ func (s *TradingApiService) GetUserItems(ctx context.Context, userID uuid.UUID) 
 	}
 
 	return Response(http.StatusOK, items), nil
-}
-
-func (s *TradingApiService) getPurchaseIdempotenceKey(ctx context.Context, userID uuid.UUID) (string, error) {
-	state, err := s.purchaseOrders.GetStateByUser(ctx, userID)
-	if err != nil {
-		return "", err
-	}
-
-	hash := sha256.Sum256([]byte(userID.String() + ":purchase:" + state))
-
-	return hex.EncodeToString(hash[:]), nil
-}
-
-func (s *TradingApiService) getSellIdempotenceKey(ctx context.Context, userID uuid.UUID) (string, error) {
-	state, err := s.sellOrders.GetStateByUser(ctx, userID)
-	if err != nil {
-		return "", err
-	}
-
-	hash := sha256.Sum256([]byte(userID.String() + ":sell:" + state))
-
-	return hex.EncodeToString(hash[:]), nil
-}
-
-func (s *TradingApiService) verifyPurchaseIdempotenceKey(ctx context.Context, userID uuid.UUID, key string) error {
-	actualKey, err := s.getPurchaseIdempotenceKey(ctx, userID)
-	if err != nil {
-		return err
-	}
-	if actualKey != key {
-		return errors.WithStack(errOutdated)
-	}
-
-	return nil
-}
-
-func (s *TradingApiService) verifySellIdempotenceKey(ctx context.Context, userID uuid.UUID, key string) error {
-	actualKey, err := s.getSellIdempotenceKey(ctx, userID)
-	if err != nil {
-		return err
-	}
-	if actualKey != key {
-		return errors.WithStack(errOutdated)
-	}
-
-	return nil
 }

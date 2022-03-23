@@ -22,6 +22,8 @@ func NewAPIRouter(c *Container) http.Handler {
 		c.txManager,
 		c.dealer,
 		c.validator,
+		c.purchaseState,
+		c.sellState,
 		c.locker,
 		c.config.LockTimeout,
 	)

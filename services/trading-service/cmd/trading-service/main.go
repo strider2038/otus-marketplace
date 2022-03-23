@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math/rand"
 	"time"
 
 	"trading-service/internal/di"
@@ -18,12 +19,15 @@ var (
 )
 
 func main() {
+	rand.Seed(time.Now().UnixNano())
+
 	config := di.Config{Version: version}
 	err := cleanenv.ReadEnv(&config)
 	if err != nil {
 		log.Fatal("invalid config:", err)
 	}
 	config.LockTimeout = 5 * time.Second
+	config.StateTimeout = 5 * time.Minute
 
 	container, err := di.NewContainer(config)
 	if err != nil {

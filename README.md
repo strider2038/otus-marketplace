@@ -15,32 +15,12 @@
 
 * [x] добавить портфель и историю в схемы
 * [x] регистрация брокера
-  * [x] user role
-  * [x] user role in gateway
 * [x] начисление комиссии брокера
-  * [x] начислять комиссию
-  * [x] идемпотентные методы
-    * [x] пополнение
-    * [x] снятие
 * [x] сервис торговой площадки
-  * [x] код
-  * [x] helm
-  * [x] api gateway mapping
-  * [x] идемпотентные методы
-    * [x] сделки на покупку
-    * [x] сделки на продажу
-    * [ ] блокировка в redis
 * [x] сервис статистики
 * [x] сервис истории сделок
 * [x] сервис уведомлений (сделки)
-* [ ] тесты
-  * [x] trading
-  * [ ] negative cases 
-    * [ ] not enough money
-    * [x] billing idempotence
-  * [x] notifications
-  * [x] history
-  * [x] stats
+* [x] тесты
 * [ ] мониторинг
 * [ ] performance тесты
 
@@ -75,30 +55,16 @@ helm install --wait -f deploy/notification-values.yaml notification-service ./se
 kubectl apply -f services/ambassador/
 ```
 
-## Отладка Apache Kafka
+## Тестирование
 
-Kafka can be accessed by consumers via port 9092 on the following DNS name from within your cluster:
+Тесты Postman расположены в директории `test/postman`. Запуск тестов.
 
-    kafka.otus.svc.cluster.local
+```bash
+newman run ./test/postman/test.postman_collection.json
+```
 
-Each Kafka broker can be accessed by producers via port 9092 on the following DNS name(s) from within your cluster:
+Или с использованием Docker.
 
-    kafka-0.kafka-headless.otus.svc.cluster.local:9092
-
-To create a pod that you can use as a Kafka client run the following commands:
-
-    kubectl run kafka-client --restart='Never' --image docker.io/bitnami/kafka:3.1.0-debian-10-r49 --namespace otus --command -- sleep infinity
-    kubectl exec --tty -i kafka-client --namespace otus -- bash
-
-    PRODUCER:
-        kafka-console-producer.sh \
-            
-            --broker-list kafka-0.kafka-headless.otus.svc.cluster.local:9092 \
-            --topic test
-
-    CONSUMER:
-        kafka-console-consumer.sh \
-            
-            --bootstrap-server kafka.otus.svc.cluster.local:9092 \
-            --topic test \
-            --from-beginning
+```bash
+docker run -v $PWD/test/postman/:/etc/newman --network host -t postman/newman:alpine run test.postman_collection.json
+```

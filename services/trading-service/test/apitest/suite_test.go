@@ -72,6 +72,8 @@ func (suite *APISuite) SetupTest() {
 		transactionManager,
 		dealer,
 		validator,
+		mock.StateRepository{},
+		mock.StateRepository{},
 		mock.Locker{},
 		0,
 	)

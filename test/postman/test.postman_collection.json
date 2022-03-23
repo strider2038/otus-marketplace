@@ -570,7 +570,7 @@
 			"response": []
 		},
 		{
-			"name": "get first trader billing account (empty)",
+			"name": "get first trader purchase orders (empty account)",
 			"event": [
 				{
 					"listen": "test",
@@ -581,8 +581,135 @@
 							"pm.test(\"Successful GET request\", function () {",
 							"    pm.expect(pm.response.code).to.be.oneOf([200]);",
 							"});",
-							"pm.test(\"Assert billing account is empty\", function () {",
-							"    pm.expect(response.amount).to.eql(0);",
+							"pm.test(\"Assert no purchase orders\", function () {",
+							"    pm.expect(response.length).to.eq(0);",
+							"});",
+							"pm.test(\"Assert headers has ETag\", function() {",
+							"    pm.expect(pm.response.headers.get(\"etag\").length).to.greaterThan(0);",
+							"});",
+							"",
+							"pm.environment.set(\"idempotenceKey\", pm.response.headers.get(\"etag\"));",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{firstTraderToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://arch.homework/api/v1/trading/purchase-orders",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"api",
+						"v1",
+						"trading",
+						"purchase-orders"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "first trader make purchase order (empty account)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var response = pm.response.json();",
+							"",
+							"pm.test(\"Successful POST request\", function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([202]);",
+							"});",
+							"pm.test(\"Assert purchase initiated\", function () {",
+							"    pm.expect(response.status).to.eql(\"paymentPending\");",
+							"    pm.expect(response.price).to.eql(200);",
+							"    pm.expect(response.commission).to.eql(20);",
+							"});",
+							"",
+							"setTimeout(function(){}, 5000)",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{firstTraderToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "If-Match",
+						"value": "{{idempotenceKey}}",
+						"type": "default"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"itemId\": \"{{itemId}}\",\n    \"price\": 200\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://arch.homework/api/v1/trading/purchase-orders",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"api",
+						"v1",
+						"trading",
+						"purchase-orders"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get first trader notifications (empty account)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var response = pm.response.json();",
+							"",
+							"pm.test(\"Successful GET request\", function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200]);",
+							"});",
+							"pm.test(\"Assert last notification is purchase failed\", function () {",
+							"    pm.expect(response.length).to.greaterThan(0);",
+							"    pm.expect(response[0].message).to.contains(\"was not completed due to: not enough money\");",
 							"});",
 							""
 						],
@@ -604,7 +731,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://arch.homework/api/v1/billing/account",
+					"raw": "http://arch.homework/api/v1/notifications",
 					"protocol": "http",
 					"host": [
 						"arch",
@@ -613,15 +740,14 @@
 					"path": [
 						"api",
 						"v1",
-						"billing",
-						"account"
+						"notifications"
 					]
 				}
 			},
 			"response": []
 		},
 		{
-			"name": "get second trader billing account (empty)",
+			"name": "get first trader billing account (empty)",
 			"event": [
 				{
 					"listen": "test",
@@ -635,6 +761,11 @@
 							"pm.test(\"Assert billing account is empty\", function () {",
 							"    pm.expect(response.amount).to.eql(0);",
 							"});",
+							"pm.test(\"Assert headers has ETag\", function() {",
+							"    pm.expect(pm.response.headers.get(\"etag\").length).to.greaterThan(0);",
+							"});",
+							"",
+							"pm.environment.set(\"idempotenceKey\", pm.response.headers.get(\"etag\"));",
 							""
 						],
 						"type": "text/javascript"
@@ -647,7 +778,7 @@
 					"bearer": [
 						{
 							"key": "token",
-							"value": "{{secondTraderToken}}",
+							"value": "{{firstTraderToken}}",
 							"type": "string"
 						}
 					]
@@ -699,7 +830,76 @@
 					]
 				},
 				"method": "POST",
-				"header": [],
+				"header": [
+					{
+						"key": "If-Match",
+						"value": "{{idempotenceKey}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"amount\": 1000\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://arch.homework/api/v1/billing/account/deposit",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"api",
+						"v1",
+						"billing",
+						"account",
+						"deposit"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "first trader deposit money (duplicate protection)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Assert duplicate response failed\", function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([412]);",
+							"    pm.expect(pm.response.json().message).to.eq('State of resource has changed');",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{firstTraderToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "If-Match",
+						"value": "{{idempotenceKey}}",
+						"type": "text"
+					}
+				],
 				"body": {
 					"mode": "raw",
 					"raw": "{\n    \"amount\": 1000\n}",
@@ -832,6 +1032,62 @@
 			"response": []
 		},
 		{
+			"name": "get first trader purchase orders (empty)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var response = pm.response.json();",
+							"",
+							"pm.test(\"Successful GET request\", function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200]);",
+							"});",
+							"pm.test(\"Assert no purchase orders\", function () {",
+							"    pm.expect(response.length).to.eq(0);",
+							"});",
+							"pm.test(\"Assert headers has ETag\", function() {",
+							"    pm.expect(pm.response.headers.get(\"etag\").length).to.greaterThan(0);",
+							"});",
+							"",
+							"pm.environment.set(\"idempotenceKey\", pm.response.headers.get(\"etag\"));",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{firstTraderToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://arch.homework/api/v1/trading/purchase-orders",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"api",
+						"v1",
+						"trading",
+						"purchase-orders"
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "first trader make purchase order",
 			"event": [
 				{
@@ -849,7 +1105,7 @@
 							"    pm.expect(response.commission).to.eql(20);",
 							"});",
 							"",
-							"setTimeout(function(){}, pm.environment.get('timeout'))",
+							"setTimeout(function(){}, 5000)",
 							""
 						],
 						"type": "text/javascript"
@@ -871,7 +1127,69 @@
 				"header": [
 					{
 						"key": "If-Match",
-						"value": "{{orderTag}}",
+						"value": "{{idempotenceKey}}",
+						"type": "default"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"itemId\": \"{{itemId}}\",\n    \"price\": 200\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://arch.homework/api/v1/trading/purchase-orders",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"api",
+						"v1",
+						"trading",
+						"purchase-orders"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "first trader make purchase order (duplicate protection)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Assert duplicate response failed\", function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([412]);",
+							"    pm.expect(pm.response.json().message).to.eq('State of resource has changed');",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{firstTraderToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "If-Match",
+						"value": "{{idempotenceKey}}",
 						"type": "default"
 					}
 				],
@@ -1211,6 +1529,62 @@
 			"response": []
 		},
 		{
+			"name": "get first trader sell orders (empty)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var response = pm.response.json();",
+							"",
+							"pm.test(\"Successful GET request\", function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200]);",
+							"});",
+							"pm.test(\"Assert no sell orders\", function () {",
+							"    pm.expect(response.length).to.eq(0);",
+							"});",
+							"pm.test(\"Assert headers has ETag\", function() {",
+							"    pm.expect(pm.response.headers.get(\"etag\").length).to.greaterThan(0);",
+							"});",
+							"",
+							"pm.environment.set(\"idempotenceKey\", pm.response.headers.get(\"etag\"));",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{firstTraderToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://arch.homework/api/v1/trading/sell-orders",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"api",
+						"v1",
+						"trading",
+						"sell-orders"
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "first trader make sell order",
 			"event": [
 				{
@@ -1228,7 +1602,7 @@
 							"    pm.expect(response.commission).to.eql(25);",
 							"});",
 							"",
-							"setTimeout(function(){}, pm.environment.get('timeout'))",
+							"setTimeout(function(){}, 5000)",
 							""
 						],
 						"type": "text/javascript"
@@ -1250,7 +1624,7 @@
 				"header": [
 					{
 						"key": "If-Match",
-						"value": "{{orderTag}}",
+						"value": "{{idempotenceKey}}",
 						"type": "default"
 					}
 				],
@@ -1275,6 +1649,124 @@
 						"v1",
 						"trading",
 						"sell-orders"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "first trader make sell order (duplicate protection)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Assert duplicate response failed\", function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([412]);",
+							"    pm.expect(pm.response.json().message).to.eq('State of resource has changed');",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{firstTraderToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "If-Match",
+						"value": "{{idempotenceKey}}",
+						"type": "default"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"itemId\": \"{{itemId}}\",\n    \"price\": 250\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://arch.homework/api/v1/trading/sell-orders",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"api",
+						"v1",
+						"trading",
+						"sell-orders"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get second trader billing account (empty)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var response = pm.response.json();",
+							"",
+							"pm.test(\"Successful GET request\", function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200]);",
+							"});",
+							"pm.test(\"Assert billing account is empty\", function () {",
+							"    pm.expect(response.amount).to.eql(0);",
+							"});",
+							"pm.test(\"Assert headers has ETag\", function() {",
+							"    pm.expect(pm.response.headers.get(\"etag\").length).to.greaterThan(0);",
+							"});",
+							"",
+							"pm.environment.set(\"idempotenceKey\", pm.response.headers.get(\"etag\"));",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{secondTraderToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://arch.homework/api/v1/billing/account",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"api",
+						"v1",
+						"billing",
+						"account"
 					]
 				}
 			},
@@ -1308,7 +1800,13 @@
 					]
 				},
 				"method": "POST",
-				"header": [],
+				"header": [
+					{
+						"key": "If-Match",
+						"value": "{{idempotenceKey}}",
+						"type": "text"
+					}
+				],
 				"body": {
 					"mode": "raw",
 					"raw": "{\n    \"amount\": 1000\n}",
@@ -1388,6 +1886,62 @@
 			"response": []
 		},
 		{
+			"name": "get second trader purchase orders (empty)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var response = pm.response.json();",
+							"",
+							"pm.test(\"Successful GET request\", function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200]);",
+							"});",
+							"pm.test(\"Assert no purchase orders\", function () {",
+							"    pm.expect(response.length).to.eq(0);",
+							"});",
+							"pm.test(\"Assert headers has ETag\", function() {",
+							"    pm.expect(pm.response.headers.get(\"etag\").length).to.greaterThan(0);",
+							"});",
+							"",
+							"pm.environment.set(\"idempotenceKey\", pm.response.headers.get(\"etag\"));",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{secondTraderToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://arch.homework/api/v1/trading/purchase-orders",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"api",
+						"v1",
+						"trading",
+						"purchase-orders"
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "second trader make purchase order (too low price)",
 			"event": [
 				{
@@ -1405,7 +1959,7 @@
 							"    pm.expect(response.commission).to.eql(20);",
 							"});",
 							"",
-							"setTimeout(function(){}, pm.environment.get('timeout'))",
+							"setTimeout(function(){}, 5000)",
 							""
 						],
 						"type": "text/javascript"
@@ -1427,7 +1981,7 @@
 				"header": [
 					{
 						"key": "If-Match",
-						"value": "{{orderTag}}",
+						"value": "{{idempotenceKey}}",
 						"type": "default"
 					}
 				],
@@ -1591,6 +2145,11 @@
 							"pm.test(\"Assert purchase order is pending\", function () {",
 							"    pm.expect(response.length).to.eq(0);",
 							"});",
+							"pm.test(\"Assert headers has ETag\", function() {",
+							"    pm.expect(pm.response.headers.get(\"etag\").length).to.greaterThan(0);",
+							"});",
+							"",
+							"pm.environment.set(\"idempotenceKey\", pm.response.headers.get(\"etag\"));",
 							""
 						],
 						"type": "text/javascript"
@@ -1645,7 +2204,7 @@
 							"    pm.expect(response.commission).to.eql(26);",
 							"});",
 							"",
-							"setTimeout(function(){}, pm.environment.get('timeout'))",
+							"setTimeout(function(){}, 5000)",
 							""
 						],
 						"type": "text/javascript"
@@ -1667,7 +2226,7 @@
 				"header": [
 					{
 						"key": "If-Match",
-						"value": "{{orderTag}}",
+						"value": "{{idempotenceKey}}",
 						"type": "default"
 					}
 				],
@@ -1918,6 +2477,11 @@
 							"pm.test(\"Assert money spent with commission\", function () {",
 							"    pm.expect(response.amount).to.eql(725);",
 							"});",
+							"pm.test(\"Assert headers has ETag\", function() {",
+							"    pm.expect(pm.response.headers.get(\"etag\").length).to.greaterThan(0);",
+							"});",
+							"",
+							"pm.environment.set(\"idempotenceKey\", pm.response.headers.get(\"etag\"));",
 							""
 						],
 						"type": "text/javascript"
@@ -2104,6 +2668,131 @@
 						"v1",
 						"history",
 						"deals"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "second trader withdraw money",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Successful POST request\", function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([204]);",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{secondTraderToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "If-Match",
+						"value": "{{idempotenceKey}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"amount\": 700\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://arch.homework/api/v1/billing/account/withdraw",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"api",
+						"v1",
+						"billing",
+						"account",
+						"withdraw"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "second trader withdraw money (duplicate protection)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Assert duplicate response failed\", function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([412]);",
+							"    pm.expect(pm.response.json().message).to.eq('State of resource has changed');",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{secondTraderToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "If-Match",
+						"value": "{{idempotenceKey}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"amount\": 700\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://arch.homework/api/v1/billing/account/withdraw",
+					"protocol": "http",
+					"host": [
+						"arch",
+						"homework"
+					],
+					"path": [
+						"api",
+						"v1",
+						"billing",
+						"account",
+						"withdraw"
 					]
 				}
 			},
