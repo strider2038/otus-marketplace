@@ -7,6 +7,7 @@ import (
 
 	"billing-service/internal/billing"
 	"billing-service/internal/kafka"
+	"billing-service/internal/monitoring"
 	"billing-service/internal/postgres"
 
 	"github.com/bsm/redislock"
@@ -27,6 +28,7 @@ type Container struct {
 	redisConnection *redis.Client
 	config          Config
 	logger          zerolog.Logger
+	metrics         *monitoring.Metrics
 
 	locker              *redislock.Client
 	accountRepository   *postgres.AccountRepository
@@ -70,6 +72,8 @@ func NewContainer(config Config) (*Container, error) {
 	c.redisConnection = redisClient
 	c.locker = redislock.New(c.redisConnection)
 	c.logger = zerolog.New(os.Stdout)
+	c.metrics = monitoring.NewMetrics("billing_service")
+
 	c.accountRepository = postgres.NewAccountRepository(c.dbConnection)
 	c.operationRepository = postgres.NewOperationRepository(c.dbConnection)
 	c.txManager = pgxadapter.NewTransactionManager(c.dbConnection)

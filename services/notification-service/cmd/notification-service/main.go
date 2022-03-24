@@ -28,7 +28,8 @@ func main() {
 	if err != nil {
 		log.Fatal("failed to connect to postgres:", err)
 	}
-	router, err := di.NewAPIRouter(connection, config)
+	container := di.NewContainer(connection, config)
+	router, err := di.NewAPIRouter(container)
 	if err != nil {
 		log.Fatal("failed to create router: ", err)
 	}
@@ -38,8 +39,8 @@ func main() {
 
 	group := ossync.NewGroup(context.Background())
 	group.Go(httpserver.New(address, router).ListenAndServe)
-	group.Go(di.NewIdentityConsumer(connection, config).Run)
-	group.Go(di.NewTradingConsumer(connection, config).Run)
+	group.Go(di.NewIdentityConsumer(container).Run)
+	group.Go(di.NewTradingConsumer(container).Run)
 	err = group.Wait()
 	if err != nil {
 		log.Fatalln(err)

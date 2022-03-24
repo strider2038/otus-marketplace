@@ -7,6 +7,7 @@ import (
 
 	"trading-service/internal/kafka"
 	"trading-service/internal/messaging"
+	"trading-service/internal/monitoring"
 	"trading-service/internal/postgres"
 	redisadapter "trading-service/internal/redis"
 	"trading-service/internal/trading"
@@ -29,6 +30,7 @@ type Container struct {
 	dbConnection    pgxadapter.Connection
 	redisConnection *redis.Client
 	logger          zerolog.Logger
+	metrics         *monitoring.Metrics
 
 	locker                  *redisadapter.LockerAdapter
 	billingDispatcher       *kafka.Dispatcher
@@ -75,6 +77,7 @@ func NewContainer(config Config) (*Container, error) {
 	c.redisConnection = redisClient
 	c.logger = zerolog.New(os.Stdout)
 	c.locker = redisadapter.NewLockerAdapter(redislock.New(redisClient))
+	c.metrics = monitoring.NewMetrics("trading_service")
 
 	c.billingDispatcher = kafka.NewDispatcher(
 		&segmentio.Writer{

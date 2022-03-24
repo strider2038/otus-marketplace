@@ -2,12 +2,11 @@ package di
 
 import (
 	"log"
-	"os"
 
 	"history-service/internal/kafka"
 	"history-service/internal/messaging"
+	"history-service/internal/monitoring"
 
-	"github.com/rs/zerolog"
 	segmentio "github.com/segmentio/kafka-go"
 )
 
@@ -19,7 +18,9 @@ func NewTradingConsumer(c *Container) *kafka.Consumer {
 		ErrorLogger: log.Default(),
 	})
 
-	return kafka.NewConsumer(reader, zerolog.New(os.Stdout), map[string]kafka.Processor{
+	mux := kafka.NewMux(c.logger, map[string]kafka.Processor{
 		messaging.DealSucceeded{}.Name(): messaging.NewDealSucceededProcessor(c.dealRepository),
 	})
+
+	return kafka.NewConsumer(reader, c.logger, monitoring.NewMessagingMiddleware(mux, c.metrics))
 }

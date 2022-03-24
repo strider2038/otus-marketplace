@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"history-service/internal/history"
+	"history-service/internal/monitoring"
 	"history-service/internal/postgres"
 	"history-service/internal/postgres/database"
 
@@ -16,6 +17,7 @@ type Container struct {
 	db         *database.Queries
 	config     Config
 	logger     zerolog.Logger
+	metrics    *monitoring.Metrics
 
 	dealRepository history.DealRepository
 }
@@ -25,6 +27,7 @@ func NewContainer(connection *pgxpool.Pool, config Config) *Container {
 	c.db = database.New(connection)
 	c.logger = zerolog.New(os.Stdout)
 	c.dealRepository = postgres.NewDealRepository(c.db)
+	c.metrics = monitoring.NewMetrics("history_service")
 
 	return c
 }

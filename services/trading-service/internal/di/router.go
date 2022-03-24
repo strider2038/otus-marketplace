@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"trading-service/internal/api"
+	"trading-service/internal/monitoring"
 
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -30,9 +31,8 @@ func NewAPIRouter(c *Container) http.Handler {
 	apiController := api.NewTradingApiController(apiService)
 
 	apiRouter := api.NewRouter(apiController)
-	metrics := api.NewMetrics("trading_service")
 	apiRouter.Use(func(handler http.Handler) http.Handler {
-		return api.MetricsMiddleware(handler, metrics)
+		return monitoring.MetricsMiddleware(handler, c.metrics)
 	})
 
 	router := NewRouter(c.dbConnection, c.config)

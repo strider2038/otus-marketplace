@@ -9,18 +9,20 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
+var errProcessorNotFound = errors.New("processor not found")
+
 type Processor interface {
-	Process(ctx context.Context, message []byte) error
+	Process(ctx context.Context, name string, message []byte) error
 }
 
 type Consumer struct {
-	reader     *kafka.Reader
-	logger     zerolog.Logger
-	processors map[string]Processor
+	reader    *kafka.Reader
+	logger    zerolog.Logger
+	processor Processor
 }
 
-func NewConsumer(reader *kafka.Reader, logger zerolog.Logger, processors map[string]Processor) *Consumer {
-	return &Consumer{reader: reader, logger: logger, processors: processors}
+func NewConsumer(reader *kafka.Reader, logger zerolog.Logger, processor Processor) *Consumer {
+	return &Consumer{reader: reader, logger: logger, processor: processor}
 }
 
 func (c *Consumer) Run(ctx context.Context) error {
@@ -34,15 +36,11 @@ func (c *Consumer) Run(ctx context.Context) error {
 		name := getMessageName(message)
 		c.logger.Info().Str("name", name).Msg("message received")
 
-		processor := c.processors[name]
-		if processor == nil {
-			c.logger.Error().Str("name", name).Msg("processor not found")
-		} else {
-			err = processor.Process(ctx, message.Value)
+		err = c.processor.Process(ctx, name, message.Value)
+		if err == nil {
 			c.logger.Info().Str("name", name).Dur("processingTime", time.Since(start)).Msg("message processed")
-			if err != nil {
-				c.logger.Info().Str("name", name).Err(err).Msg("processing failed")
-			}
+		} else {
+			c.logger.Info().Str("name", name).Err(err).Msg("processing failed")
 		}
 
 		err = c.reader.CommitMessages(ctx, message)
@@ -52,6 +50,24 @@ func (c *Consumer) Run(ctx context.Context) error {
 
 		c.logger.Info().Str("name", name).Dur("processingTime", time.Since(start)).Msg("message committed")
 	}
+}
+
+type Mux struct {
+	processors map[string]Processor
+	logger     zerolog.Logger
+}
+
+func NewMux(logger zerolog.Logger, processors map[string]Processor) *Mux {
+	return &Mux{processors: processors, logger: logger}
+}
+
+func (m *Mux) Process(ctx context.Context, name string, message []byte) error {
+	processor := m.processors[name]
+	if processor == nil {
+		return errors.WithStack(errProcessorNotFound)
+	}
+
+	return processor.Process(ctx, name, message)
 }
 
 func getMessageName(message kafka.Message) string {

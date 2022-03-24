@@ -54,7 +54,7 @@ func NewCreateAccrualProcessor(
 	}
 }
 
-func (p *CreateAccrualProcessor) Process(ctx context.Context, message []byte) error {
+func (p *CreateAccrualProcessor) Process(ctx context.Context, name string, message []byte) error {
 	var command CreateAccrual
 	err := json.Unmarshal(message, &command)
 	if err != nil {

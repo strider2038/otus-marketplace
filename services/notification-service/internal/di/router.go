@@ -6,28 +6,23 @@ import (
 	"net/http"
 
 	"notification-service/internal/api"
-	"notification-service/internal/postgres"
-	"notification-service/internal/postgres/database"
+	"notification-service/internal/monitoring"
 
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-func NewAPIRouter(connection *pgxpool.Pool, config Config) (http.Handler, error) {
-	db := database.New(connection)
-
-	notifications := postgres.NewNotificationRepository(db)
-	billingApiService := api.NewNotificationsApiService(notifications)
+func NewAPIRouter(c *Container) (http.Handler, error) {
+	billingApiService := api.NewNotificationsApiService(c.notifications)
 	billingApiController := api.NewNotificationsApiController(billingApiService)
 
 	apiRouter := api.NewRouter(billingApiController)
-	metrics := api.NewMetrics("notification_service")
 	apiRouter.Use(func(handler http.Handler) http.Handler {
-		return api.MetricsMiddleware(handler, metrics)
+		return monitoring.MetricsMiddleware(handler, c.metrics)
 	})
 
-	router := NewRouter(connection, config)
+	router := NewRouter(c.dbConnection, c.config)
 	router.PathPrefix("/api").Handler(apiRouter)
 	router.Handle("/metrics", promhttp.Handler())
 

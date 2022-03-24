@@ -51,7 +51,7 @@ func NewPaymentSucceededProcessor(dealer *trading.Dealer) *PaymentSucceededProce
 	return &PaymentSucceededProcessor{dealer: dealer}
 }
 
-func (p *PaymentSucceededProcessor) Process(ctx context.Context, message []byte) error {
+func (p *PaymentSucceededProcessor) Process(ctx context.Context, name string, message []byte) error {
 	var payment PaymentSucceeded
 	err := json.Unmarshal(message, &payment)
 	if err != nil {
@@ -78,7 +78,7 @@ func NewPaymentDeclinedProcessor(dealer *trading.Dealer) *PaymentDeclinedProcess
 	return &PaymentDeclinedProcessor{dealer: dealer}
 }
 
-func (p *PaymentDeclinedProcessor) Process(ctx context.Context, message []byte) error {
+func (p *PaymentDeclinedProcessor) Process(ctx context.Context, name string, message []byte) error {
 	var event PaymentDeclined
 	err := json.Unmarshal(message, &event)
 	if err != nil {

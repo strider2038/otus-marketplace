@@ -82,20 +82,20 @@ build:
 deploy:
   helm:
     releases:
-#      - name: "identity-service"
-#        namespace: "otus"
-#        chartPath: "services/identity-service/deployments/identity-service"
-#        wait: true
-#        valuesFiles:
-#          - "deploy/identity-values.yaml"
-#
-#      - name: "billing-service"
-#        namespace: "otus"
-#        chartPath: "services/billing-service/deployments/billing-service"
-#        wait: true
-#        valuesFiles:
-#          - "deploy/billing-values.yaml"
-#
+      - name: "identity-service"
+        namespace: "otus"
+        chartPath: "services/identity-service/deployments/identity-service"
+        wait: true
+        valuesFiles:
+          - "deploy/identity-values.yaml"
+
+      - name: "billing-service"
+        namespace: "otus"
+        chartPath: "services/billing-service/deployments/billing-service"
+        wait: true
+        valuesFiles:
+          - "deploy/billing-values.yaml"
+
       - name: "trading-service"
         namespace: "otus"
         chartPath: "services/trading-service/deployments/trading-service"
@@ -103,23 +103,23 @@ deploy:
         valuesFiles:
           - "deploy/trading-values.yaml"
 
-#      - name: "history-service"
-#        namespace: "otus"
-#        chartPath: "services/history-service/deployments/history-service"
-#        wait: true
-#        valuesFiles:
-#          - "deploy/history-values.yaml"
-#
-#      - name: "statistics-service"
-#        namespace: "otus"
-#        chartPath: "services/statistics-service/deployments/statistics-service"
-#        wait: true
-#        valuesFiles:
-#          - "deploy/statistics-values.yaml"
-#
-#      - name: "notification-service"
-#        namespace: "otus"
-#        chartPath: "services/notification-service/deployments/notification-service"
-#        wait: true
-#        valuesFiles:
-#          - "deploy/notification-values.yaml"
+      - name: "history-service"
+        namespace: "otus"
+        chartPath: "services/history-service/deployments/history-service"
+        wait: true
+        valuesFiles:
+          - "deploy/history-values.yaml"
+
+      - name: "statistics-service"
+        namespace: "otus"
+        chartPath: "services/statistics-service/deployments/statistics-service"
+        wait: true
+        valuesFiles:
+          - "deploy/statistics-values.yaml"
+
+      - name: "notification-service"
+        namespace: "otus"
+        chartPath: "services/notification-service/deployments/notification-service"
+        wait: true
+        valuesFiles:
+          - "deploy/notification-values.yaml"

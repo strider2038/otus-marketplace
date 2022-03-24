@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	di2 "statistics-service/internal/di"
+	"statistics-service/internal/di"
 
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/jackc/pgx/v4"
@@ -22,7 +22,7 @@ var (
 )
 
 func main() {
-	config := di2.Config{Version: version}
+	config := di.Config{Version: version}
 	err := cleanenv.ReadEnv(&config)
 	if err != nil {
 		log.Fatal("invalid config:", err)
@@ -41,15 +41,15 @@ func main() {
 	if err != nil {
 		log.Fatal("failed to connect to postgres:", err)
 	}
-	container := di2.NewContainer(pool, config)
+	container := di.NewContainer(pool, config)
 
-	router := di2.NewAPIRouter(container)
+	router := di.NewAPIRouter(container)
 	address := fmt.Sprintf(":%d", config.Port)
 	log.Println("starting application server at", address)
 
 	group := ossync.NewGroup(context.Background())
 	group.Go(httpserver.New(address, router).ListenAndServe)
-	group.Go(di2.NewTradingConsumer(container).Run)
+	group.Go(di.NewTradingConsumer(container).Run)
 	err = group.Wait()
 	if err != nil {
 		log.Fatalln(err)

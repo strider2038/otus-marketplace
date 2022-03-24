@@ -26,7 +26,7 @@ func NewUserCreatedProcessor(accounts billing.AccountRepository) *UserCreatedPro
 	return &UserCreatedProcessor{accounts: accounts}
 }
 
-func (processor *UserCreatedProcessor) Process(ctx context.Context, message []byte) error {
+func (processor *UserCreatedProcessor) Process(ctx context.Context, name string, message []byte) error {
 	var user UserCreated
 	err := json.Unmarshal(message, &user)
 	if err != nil {

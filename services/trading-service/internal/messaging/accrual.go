@@ -40,7 +40,7 @@ func NewAccrualApprovedProcessor(dealer *trading.Dealer) *AccrualApprovedProcess
 	return &AccrualApprovedProcessor{dealer: dealer}
 }
 
-func (p *AccrualApprovedProcessor) Process(ctx context.Context, message []byte) error {
+func (p *AccrualApprovedProcessor) Process(ctx context.Context, name string, message []byte) error {
 	var accrual AccrualApproved
 	err := json.Unmarshal(message, &accrual)
 	if err != nil {

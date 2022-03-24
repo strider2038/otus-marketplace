@@ -1,8 +1,11 @@
-package api
+package monitoring
 
 import (
+	"context"
 	"net/http"
 	"strconv"
+
+	"history-service/internal/kafka"
 
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
@@ -12,6 +15,8 @@ import (
 type Metrics struct {
 	RequestCount     *prometheus.CounterVec
 	RequestDurations *prometheus.HistogramVec
+	MessageCount     *prometheus.CounterVec
+	MessageDurations *prometheus.HistogramVec
 }
 
 func NewMetrics(namespace string) *Metrics {
@@ -31,6 +36,22 @@ func NewMetrics(namespace string) *Metrics {
 				Help:      "Request latency in seconds",
 			},
 			[]string{"method", "route"},
+		),
+		MessageCount: promauto.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace: namespace,
+				Name:      "message_count",
+				Help:      "Message count",
+			},
+			[]string{"message", "status"},
+		),
+		MessageDurations: promauto.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Namespace: namespace,
+				Name:      "message_latency_seconds",
+				Help:      "Message processing latency in seconds",
+			},
+			[]string{"message"},
 		),
 	}
 }
@@ -68,4 +89,28 @@ func (w *statusWriter) WriteHeader(statusCode int) {
 	w.status = statusCode
 
 	w.writer.WriteHeader(statusCode)
+}
+
+type MessagingMiddleware struct {
+	next    kafka.Processor
+	metrics *Metrics
+}
+
+func NewMessagingMiddleware(next kafka.Processor, metrics *Metrics) *MessagingMiddleware {
+	return &MessagingMiddleware{next: next, metrics: metrics}
+}
+
+func (m *MessagingMiddleware) Process(ctx context.Context, name string, message []byte) error {
+	timer := prometheus.NewTimer(m.metrics.MessageDurations.WithLabelValues(name))
+	defer timer.ObserveDuration()
+
+	err := m.next.Process(ctx, name, message)
+	status := "ok"
+	if err != nil {
+		status = "error"
+	}
+
+	m.metrics.MessageCount.WithLabelValues(name, status).Inc()
+
+	return err
 }

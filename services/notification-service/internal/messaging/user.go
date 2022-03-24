@@ -30,7 +30,7 @@ func NewUserCreatedProcessor(users notifications.UserRepository) *UserCreatedPro
 	return &UserCreatedProcessor{users: users}
 }
 
-func (processor *UserCreatedProcessor) Process(ctx context.Context, message []byte) error {
+func (processor *UserCreatedProcessor) Process(ctx context.Context, name string, message []byte) error {
 	var user UserCreated
 	err := json.Unmarshal(message, &user)
 	if err != nil {

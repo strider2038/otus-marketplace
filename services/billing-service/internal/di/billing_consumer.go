@@ -5,6 +5,7 @@ import (
 
 	"billing-service/internal/kafka"
 	"billing-service/internal/messaging"
+	"billing-service/internal/monitoring"
 
 	segmentio "github.com/segmentio/kafka-go"
 )
@@ -17,24 +18,26 @@ func NewBillingConsumer(c *Container) *kafka.Consumer {
 		ErrorLogger: log.Default(),
 	})
 
+	mux := kafka.NewMux(c.logger, map[string]kafka.Processor{
+		"Billing/CreatePayment": messaging.NewCreatePaymentProcessor(
+			c.accountRepository,
+			c.operationRepository,
+			c.broker,
+			c.txManager,
+			c.billingDispatcher,
+		),
+		"Billing/CreateAccrual": messaging.NewCreateAccrualProcessor(
+			c.accountRepository,
+			c.operationRepository,
+			c.broker,
+			c.txManager,
+			c.billingDispatcher,
+		),
+	})
+
 	return kafka.NewConsumer(
 		reader,
 		c.logger,
-		map[string]kafka.Processor{
-			"Billing/CreatePayment": messaging.NewCreatePaymentProcessor(
-				c.accountRepository,
-				c.operationRepository,
-				c.broker,
-				c.txManager,
-				c.billingDispatcher,
-			),
-			"Billing/CreateAccrual": messaging.NewCreateAccrualProcessor(
-				c.accountRepository,
-				c.operationRepository,
-				c.broker,
-				c.txManager,
-				c.billingDispatcher,
-			),
-		},
+		monitoring.NewMessagingMiddleware(mux, c.metrics),
 	)
 }

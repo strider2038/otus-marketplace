@@ -65,7 +65,7 @@ func NewCreatePaymentProcessor(
 	}
 }
 
-func (p *CreatePaymentProcessor) Process(ctx context.Context, message []byte) error {
+func (p *CreatePaymentProcessor) Process(ctx context.Context, name string, message []byte) error {
 	var command CreatePayment
 	err := json.Unmarshal(message, &command)
 	if err != nil {

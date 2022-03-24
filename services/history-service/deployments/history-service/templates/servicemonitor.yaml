@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "history-service.fullname" . }}
+  labels:
+    {{- include "history-service.labels" . | nindent 4 }}
+spec:
+  jobLabel: {{ include "history-service.fullname" . }}
+  namespaceSelector:
+    matchNames:
+      - "{{ $.Release.Namespace }}"
+  selector:
+    matchLabels:
+      {{- include "history-service.selectorLabels" . | nindent 6 }}
+  endpoints:
+    - interval: 1s
+      port: http
+      path: /metrics

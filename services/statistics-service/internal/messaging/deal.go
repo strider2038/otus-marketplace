@@ -44,7 +44,7 @@ func NewDealSucceededProcessor(
 	}
 }
 
-func (p *DealSucceededProcessor) Process(ctx context.Context, message []byte) error {
+func (p *DealSucceededProcessor) Process(ctx context.Context, name string, message []byte) error {
 	var deal DealSucceeded
 	err := json.Unmarshal(message, &deal)
 	if err != nil {

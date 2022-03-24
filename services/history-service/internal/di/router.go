@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"history-service/internal/api"
+	"history-service/internal/monitoring"
 
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -17,9 +18,8 @@ func NewAPIRouter(c *Container) http.Handler {
 	apiController := api.NewHistoryApiController(apiService)
 
 	apiRouter := api.NewRouter(apiController)
-	metrics := api.NewMetrics("history_service")
 	apiRouter.Use(func(handler http.Handler) http.Handler {
-		return api.MetricsMiddleware(handler, metrics)
+		return monitoring.MetricsMiddleware(handler, c.metrics)
 	})
 
 	router := NewRouter(c.connection, c.config)

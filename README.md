@@ -21,11 +21,9 @@
 * [x] сервис истории сделок
 * [x] сервис уведомлений (сделки)
 * [x] тесты
-* [ ] мониторинг
+* [x] мониторинг
 * [ ] performance тесты
-
-* дополнительно
-  * [ ] debezium
+* [ ] github release
 
 ## Запуск приложения
 
@@ -43,6 +41,15 @@ helm install aes datawire/ambassador -f deploy/ambassador-values.yaml
 # установка Apache Kafka
 helm install kafka bitnami/kafka -f deploy/kafka-values.yaml
 
+# установка prometheus
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo add stable https://charts.helm.sh/stable
+helm install prom prometheus-community/kube-prometheus-stack -f deploy/prometheus.yaml --atomic
+
+# установка ingress nginx
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm install nginx ingress-nginx/ingress-nginx -f deploy/nginx-ingress.yaml --atomic
+
 # запуск микросервисов
 helm install --wait -f deploy/identity-values.yaml identity-service ./services/identity-service/deployments/identity-service --atomic
 helm install --wait -f deploy/billing-values.yaml billing-service ./services/billing-service/deployments/billing-service --atomic
@@ -53,6 +60,16 @@ helm install --wait -f deploy/notification-values.yaml notification-service ./se
 
 # применение настроек ambassador
 kubectl apply -f services/ambassador/
+```
+
+## Мониторинг
+
+```shell
+# отладка prometheus
+kubectl port-forward service/prom-kube-prometheus-stack-prometheus 9090
+
+# отладка grafana
+kubectl port-forward service/prom-grafana 9000:80
 ```
 
 ## Тестирование
