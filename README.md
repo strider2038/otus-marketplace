@@ -22,15 +22,15 @@ kubectl create namespace otus
 kubectl config set-context --current --namespace=otus
 
 # установка Ambassador
-helm install aes datawire/ambassador -f deploy/ambassador-values.yaml
+helm install --wait aes datawire/ambassador -f deploy/ambassador-values.yaml
 
 # установка Apache Kafka
-helm install kafka bitnami/kafka -f deploy/kafka-values.yaml
+helm install --wait kafka bitnami/kafka -f deploy/kafka-values.yaml
 
 # установка prometheus
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo add stable https://charts.helm.sh/stable
-helm install prom prometheus-community/kube-prometheus-stack -f deploy/prometheus.yaml --atomic
+helm install --wait prom prometheus-community/kube-prometheus-stack -f deploy/prometheus.yaml --atomic
 
 # запуск микросервисов
 helm install --wait -f deploy/identity-values.yaml identity-service ./services/identity-service/deployments/identity-service --atomic
