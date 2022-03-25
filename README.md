@@ -11,20 +11,6 @@
 5. [Спецификация AsyncAPI](docs/async-api.yaml)
 6. [Презентация по проекту](https://docs.google.com/presentation/d/1KrmSC7teapaxYjeN1FhxTqiPeEEtaix5PytTRu5WEwI/edit?usp=sharing)
 
-## TODO
-
-* [x] добавить портфель и историю в схемы
-* [x] регистрация брокера
-* [x] начисление комиссии брокера
-* [x] сервис торговой площадки
-* [x] сервис статистики
-* [x] сервис истории сделок
-* [x] сервис уведомлений (сделки)
-* [x] тесты
-* [x] мониторинг
-* [ ] performance тесты
-* [ ] github release
-
 ## Запуск приложения
 
 ```shell
@@ -45,10 +31,6 @@ helm install kafka bitnami/kafka -f deploy/kafka-values.yaml
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo add stable https://charts.helm.sh/stable
 helm install prom prometheus-community/kube-prometheus-stack -f deploy/prometheus.yaml --atomic
-
-# установка ingress nginx
-helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-helm install nginx ingress-nginx/ingress-nginx -f deploy/nginx-ingress.yaml --atomic
 
 # запуск микросервисов
 helm install --wait -f deploy/identity-values.yaml identity-service ./services/identity-service/deployments/identity-service --atomic
